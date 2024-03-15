@@ -5,7 +5,7 @@ Base = declarative_base()
 
 
 class User(Base):
-    __tablename__ = 'users'
+    __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
@@ -24,7 +24,7 @@ class User(Base):
 
 
 class Country(Base):
-    __tablename__ = 'countries'
+    __tablename__ = "countries"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True)
@@ -39,24 +39,24 @@ class Country(Base):
 
 
 class City(Base):
-    __tablename__ = 'cities'
+    __tablename__ = "cities"
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
-    country_id = Column(Integer, ForeignKey('countries.id'))
+    country_id = Column(Integer, ForeignKey("countries.id"))
 
     def __init__(self, name, country_id):
         self.name = name
         self.country_id = country_id
 
     def __repr__(self):
-        return f'City(name={self.name}, country_id={self.country_id})'
+        return f"City(name={self.name}, country_id={self.country_id})"
 
 
 class Forecast(Base):
-    __tablename__ = 'forecasts'
+    __tablename__ = "forecasts"
 
     id = Column(Integer, primary_key=True, index=True)
-    city_id = Column(Integer, ForeignKey('cities.id'), name='city_id_fk')
+    city_id = Column(Integer, ForeignKey("cities.id"), name="city_id_fk")
     datetime = Column(DateTime)
     forecasted_temperature = Column(Float)
     forecasted_humidity = Column(Float)
