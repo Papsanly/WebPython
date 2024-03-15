@@ -1,23 +1,39 @@
-from sqlalchemy import *
-from sqlalchemy.ext.declarative import declarative_base
+from datetime import datetime
 
-Base = declarative_base()
+from pydantic import BaseModel
+from sqlalchemy import Integer, String, create_engine, ForeignKey
+from sqlalchemy.orm import sessionmaker, Mapped, mapped_column, DeclarativeBase
+
+from authorization import create_superadmin, create_user
+
+DATABASE_URL = "sqlite:///./sqlite.db"
+
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+Session = sessionmaker(engine, autocommit=False, autoflush=False)
+
+
+def get_db():
+    db = Session()
+    try:
+        create_superadmin(db)
+        create_user(db)
+        yield db
+    finally:
+        db.close()
+
+
+class Base(DeclarativeBase):
+    pass
 
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
-    email = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
-    role = Column(String, default="user")
-
-    def __init__(self, username, email, hashed_password, role="user"):
-        self.username = username
-        self.email = email
-        self.hashed_password = hashed_password
-        self.role = role
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    username: Mapped[str] = mapped_column(String, unique=True, index=True)
+    email: Mapped[str] = mapped_column(String, unique=True, index=True)
+    hashed_password: Mapped[str]
+    role: Mapped[str] = mapped_column(String, default="user")
 
     def __repr__(self):
         return self.username
@@ -26,13 +42,9 @@ class User(Base):
 class Country(Base):
     __tablename__ = "countries"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True)
-    code = Column(String, unique=True)
-
-    def __init__(self, name, code):
-        self.code = code
-        self.name = name
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String, unique=True)
+    code: Mapped[str] = mapped_column(String, unique=True)
 
     def __repr__(self):
         return self.name
@@ -40,13 +52,9 @@ class Country(Base):
 
 class City(Base):
     __tablename__ = "cities"
-    id = Column(Integer, primary_key=True)
-    name = Column(String, unique=True)
-    country_id = Column(Integer, ForeignKey("countries.id"))
-
-    def __init__(self, name, country_id):
-        self.name = name
-        self.country_id = country_id
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String, unique=True)
+    country_id: Mapped[int] = mapped_column(Integer, ForeignKey("countries.id"))
 
     def __repr__(self):
         return f"City(name={self.name}, country_id={self.country_id})"
@@ -55,21 +63,13 @@ class City(Base):
 class Forecast(Base):
     __tablename__ = "forecasts"
 
-    id = Column(Integer, primary_key=True, index=True)
-    city_id = Column(Integer, ForeignKey("cities.id"), name="city_id_fk")
-    datetime = Column(DateTime)
-    forecasted_temperature = Column(Float)
-    forecasted_humidity = Column(Float)
-
-    def __init__(self, datetime, city_id, forecasted_temperature, forecasted_humidity):
-        self.datetime = datetime
-        self.city_id = city_id
-        self.forecasted_temperature = forecasted_temperature
-        self.forecasted_humidity = forecasted_humidity
-
-
-from pydantic import BaseModel
-from datetime import datetime
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    city_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("cities.id"), name="city_id_fk"
+    )
+    datetime: Mapped[datetime]
+    forecasted_temperature: Mapped[float]
+    forecasted_humidity: Mapped[float]
 
 
 class ForecastResponse(BaseModel):
@@ -81,19 +81,3 @@ class ForecastResponse(BaseModel):
 
 class ForecastMessage(BaseModel):
     message: str
-
-
-from sqlalchemy.orm import sessionmaker
-
-DATABASE_URL = "sqlite:///./test.db"
-
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
