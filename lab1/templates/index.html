@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Weather Forecasts</title>
+</head>
+<body>
+    <h1>Weather Forecasts</h1>
+    <h2>Search for forecast</h2>
+    <form id="forecastForm" method="get" action="/forecasts">
+        <input type="number" name="city_id" placeholder="City ID" required>
+        <input type="text" name="datetime" placeholder="YYYY-MM-DD HH:MM:SS" required>
+        <button type="submit">Submit Forecast</button>
+    </form>
+</body>
+</html>

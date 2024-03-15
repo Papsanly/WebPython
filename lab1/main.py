@@ -2,6 +2,8 @@ from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 from authorization import *
 
+templates = Jinja2Templates(directory="templates")
+
 from models import *
 
 
@@ -34,6 +36,11 @@ async def startup_event():
         create_user(db)
     finally:
         db.close()
+
+
+@app.get("/", tags=["Forecasts"])
+def index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.post("/forecasts/", tags=["Forecasts"], response_model=ForecastResponse)
