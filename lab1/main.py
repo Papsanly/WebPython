@@ -213,4 +213,6 @@ app.openapi = custom_openapi
 if __name__ == "__main__":
     import uvicorn
 
+    load_dotenv()
+
     uvicorn.run(app, host="127.0.0.1", port=8000)

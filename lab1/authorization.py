@@ -1,4 +1,14 @@
+import os
+from datetime import datetime, timedelta
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
 from passlib.context import CryptContext
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from models import User, get_db
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -13,12 +23,7 @@ def get_password_hash(password):
 
 # ========================================================= #
 
-from datetime import datetime, timedelta
-from jose import JWTError, jwt
-from fastapi import Depends, HTTPException, status, APIRouter
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-
-SECRET_KEY = "secret_key"
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -38,25 +43,23 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 
 # ========================================================= #
 
-from sqlalchemy.orm import Session
-from models import User
 
-
-def authenticate_user(db: Session, username: str, password: str) -> User:
-    user = db.query(User).filter(User.username == username).first()
+def authenticate_user(db: Session, username: str, password: str) -> User | None:
+    user = db.scalar(select(User).where(User.username == username))
     if user and verify_password(password, user.hashed_password):
         return user
     return None
 
 
 def create_superadmin(db: Session):
-    superadmin_email = "superadmin@example.com"
-    superadmin = db.query(User).filter(User.email == superadmin_email).first()
+    email = os.getenv("SUPERADMIN_EMAIL")
+    password = os.getenv("SUPERADMIN_PASSWORD")
+    superadmin = db.scalar(select(User).where(User.email == email))
     if not superadmin:
         superadmin_user = User(
             username="superadmin",
-            email=superadmin_email,
-            hashed_password=get_password_hash("superadminpassword"),
+            email=email,
+            hashed_password=get_password_hash(password),
             role="admin",
         )
         db.add(superadmin_user)
@@ -64,12 +67,12 @@ def create_superadmin(db: Session):
 
 
 def create_user(db: Session):
-    superadmin_email = "user@example.com"
     superadmin = db.query(User).filter(User.email == superadmin_email).first()
+    email = os.getenv("SUPERADMIN_EMAIL")
     if not superadmin:
         superadmin_user = User(
             username="user",
-            email=superadmin_email,
+            email=email,
             hashed_password=get_password_hash("userpassword"),
             role="user",
         )
@@ -78,8 +81,6 @@ def create_user(db: Session):
 
 
 # =============================================== #
-
-from models import get_db
 
 
 def get_current_user(
