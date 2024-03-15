@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request, HTTPException, Depends, status
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import select, insert, update
 from sqlalchemy.orm import Session
 
 from authorization import (
@@ -17,7 +18,6 @@ from authorization import (
 )
 from models import (
     engine,
-    Session,
     ForecastResponse,
     get_db,
     User,
@@ -70,6 +70,7 @@ async def create_forecast(
 ):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Insufficient privileges")
+
     data = await request.json()
     city_id = data.get("city_id")
     datetime_str = data.get("datetime")
@@ -88,21 +89,23 @@ async def create_forecast(
 
     forecast_datetime = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
 
-    db_forecast = Forecast(
-        city_id=city_id,
-        datetime=forecast_datetime,
-        forecasted_temperature=forecasted_temperature,
-        forecasted_humidity=forecasted_humidity,
+    stmt = (
+        insert(Forecast)
+        .values(
+            city_id=city_id,
+            datetime=forecast_datetime,
+            forecasted_temperature=forecasted_temperature,
+            forecasted_humidity=forecasted_humidity,
+        )
+        .returning(Forecast)
     )
-    db.add(db_forecast)
-    db.commit()
-    db.refresh(db_forecast)
+    forecast = db.scalar(stmt)
 
     return {
-        "city_id": db_forecast.city_id,
-        "datetime": db_forecast.datetime,
-        "forecasted_temperature": db_forecast.forecasted_temperature,
-        "forecasted_humidity": db_forecast.forecasted_humidity,
+        "city_id": forecast.city_id,
+        "datetime": forecast.datetime,
+        "forecasted_temperature": forecast.forecasted_temperature,
+        "forecasted_humidity": forecast.forecasted_humidity,
     }
 
 
@@ -110,14 +113,14 @@ async def create_forecast(
     "/forecasts/{forecast_id}", tags=["Forecasts"], response_model=ForecastResponse
 )
 def get_forecast(forecast_id: int, db: Session = Depends(get_db)):
-    db_forecast = db.query(Forecast).filter(Forecast.id == forecast_id).first()
-    if db_forecast is None:
+    forecast = db.scalar(select(Forecast).where(Forecast.id == forecast_id))
+    if forecast is None:
         raise HTTPException(status_code=404, detail="Forecast not found")
     return {
-        "city_id": db_forecast.city_id,
-        "datetime": db_forecast.datetime,
-        "forecasted_temperature": db_forecast.forecasted_temperature,
-        "forecasted_humidity": db_forecast.forecasted_humidity,
+        "city_id": forecast.city_id,
+        "datetime": forecast.datetime,
+        "forecasted_temperature": forecast.forecasted_temperature,
+        "forecasted_humidity": forecast.forecasted_humidity,
     }
 
 
@@ -130,25 +133,33 @@ async def update_forecast(
 ):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Insufficient privileges")
+
     data = await request.json()
-    db_forecast = db.query(Forecast).filter(Forecast.id == forecast_id).first()
-    if not db_forecast:
-        raise HTTPException(status_code=404, detail="Forecast not found")
+    forecast = db.scalar(select(Forecast).where(Forecast.id == forecast_id))
 
-    db_forecast.city_id = data.get("city_id", db_forecast.city_id)
-    datetime_str = data.get(
-        "datetime", db_forecast.datetime.strftime("%Y-%m-%d %H:%M:%S")
-    )
-    db_forecast.datetime = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
-    db_forecast.forecasted_temperature = data.get(
-        "forecasted_temperature", db_forecast.forecasted_temperature
-    )
-    db_forecast.forecasted_humidity = data.get(
-        "forecasted_humidity", db_forecast.forecasted_humidity
-    )
+    if forecast is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Forecast not found"
+        )
 
-    db.commit()
-    db.refresh(db_forecast)
+    update_data = {}
+    if "city_id" in data:
+        update_data[Forecast.city_id] = data["city_id"]
+    if "datetime" in data:
+        datetime_str = data["datetime"]
+        update_data[Forecast.datetime] = datetime.strptime(
+            datetime_str, "%Y-%m-%d %H:%M:%S"
+        )
+    if "forecasted_temperature" in data:
+        update_data[Forecast.forecasted_temperature] = data["forecasted_temperature"]
+    if "forecasted_humidity" in data:
+        update_data[Forecast.forecasted_humidity] = data["forecasted_humidity"]
+
+    if update_data:
+        db.execute(
+            update(Forecast).where(Forecast.id == forecast.id).values(**update_data)
+        )
+        db.commit()
 
     return {"message": "Forecast updated successfully"}
 
@@ -163,11 +174,12 @@ def delete_forecast(
 ):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Insufficient privileges")
-    db_forecast = db.query(Forecast).filter(Forecast.id == forecast_id).first()
-    if not db_forecast:
+
+    forecast = db.scalar(select(Forecast).where(Forecast.id == forecast_id))
+    if forecast is None:
         raise HTTPException(status_code=404, detail="Forecast not found")
 
-    db.delete(db_forecast)
+    db.delete(forecast)
     db.commit()
 
     return {"message": "Forecast deleted successfully"}

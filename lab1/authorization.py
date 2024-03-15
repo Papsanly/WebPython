@@ -67,8 +67,8 @@ def create_superadmin(db: Session):
 
 
 def create_user(db: Session):
-    superadmin = db.query(User).filter(User.email == superadmin_email).first()
     email = os.getenv("SUPERADMIN_EMAIL")
+    superadmin = db.scalar(select(User).where(User.email == email))
     if not superadmin:
         superadmin_user = User(
             username="user",
