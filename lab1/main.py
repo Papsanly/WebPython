@@ -1,10 +1,30 @@
-from fastapi import FastAPI, Request
+from datetime import timedelta, datetime
+
+from dotenv import load_dotenv
+from fastapi import FastAPI, Request, HTTPException, Depends, status
+from fastapi.openapi.utils import get_openapi
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
-from authorization import *
+from sqlalchemy.orm import Session
 
-templates = Jinja2Templates(directory="templates")
-
-from models import *
+from authorization import (
+    get_current_user,
+    authenticate_user,
+    create_access_token,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    create_user,
+    create_superadmin,
+)
+from models import (
+    engine,
+    Session,
+    ForecastResponse,
+    get_db,
+    User,
+    Forecast,
+    ForecastMessage,
+    Base,
+)
 
 
 async def startup_event():
@@ -20,19 +40,18 @@ app = FastAPI(
         },
     ]
 )
+
 app.add_event_handler("startup", startup_event)
+
+templates = Jinja2Templates(directory="templates")
 
 
 @app.on_event("startup")
 async def startup_event():
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
+    Base.metadata.create_all(engine)
+    db = Session()
     try:
         create_superadmin(db)
-    finally:
-        db.close()
-
-    try:
         create_user(db)
     finally:
         db.close()
@@ -154,9 +173,6 @@ def delete_forecast(
     return {"message": "Forecast deleted successfully"}
 
 
-# ======================================== #
-
-
 @app.post("/token", tags=["Authorization"])
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
@@ -175,11 +191,6 @@ async def login_for_access_token(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-# ======================================== #
-
-from fastapi.openapi.utils import get_openapi
-
-
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
@@ -187,7 +198,8 @@ def custom_openapi():
         title="Weather API",
         version="1.0",
         summary="This is a custom API schema for our Weather API.",
-        description="This API provides weather forecasts and allows users to authenticate to access protected endpoints. "
+        description="This API provides weather forecasts and allows users to authenticate to access protected "
+        "endpoints."
         "This wonderful app is made by Andriy, Dmytro and Vladyslav.",
         routes=app.routes,
     )
