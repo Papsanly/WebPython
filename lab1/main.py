@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, HTTPException, Depends, status
 from fastapi.openapi.utils import get_openapi
@@ -18,12 +16,16 @@ from authorization import (
 from models import (
     SessionLocal,
     engine,
-    ForecastResponse,
     get_db,
     User,
     Forecast,
-    ForecastMessage,
     Base,
+)
+from schemas import (
+    ForecastSchema,
+    MessageSchema,
+    AccessTokenSchema,
+    ForecastUpdateSchema,
 )
 
 
@@ -57,109 +59,65 @@ def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
-@app.post("/forecasts/", tags=["Forecasts"], response_model=ForecastResponse)
+@app.post(
+    "/forecasts/",
+    tags=["Forecasts"],
+    response_model=ForecastSchema,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_forecast(
-    request: Request,
+    forecast: ForecastSchema,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Insufficient privileges")
-
-    data = await request.json()
-    city_id = data.get("city_id")
-    datetime_str = data.get("datetime")
-    forecasted_temperature = data.get("forecasted_temperature")
-    forecasted_humidity = data.get("forecasted_humidity")
-
-    if (
-        not city_id
-        or not datetime_str
-        or forecasted_temperature is None
-        or forecasted_humidity is None
-    ):
         raise HTTPException(
-            status_code=400, detail="Missing one or more required fields"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient privileges"
         )
-
-    forecast_datetime = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M:%S")
-
-    stmt = (
-        insert(Forecast)
-        .values(
-            city_id=city_id,
-            datetime=forecast_datetime,
-            forecasted_temperature=forecasted_temperature,
-            forecasted_humidity=forecasted_humidity,
-        )
-        .returning(Forecast)
-    )
-    forecast = db.scalar(stmt)
-
-    return {
-        "city_id": forecast.city_id,
-        "datetime": forecast.datetime,
-        "forecasted_temperature": forecast.forecasted_temperature,
-        "forecasted_humidity": forecast.forecasted_humidity,
-    }
+    return db.scalar(insert(Forecast).values(**forecast).returning(Forecast))
 
 
-@app.get(
-    "/forecasts/{forecast_id}", tags=["Forecasts"], response_model=ForecastResponse
-)
+@app.get("/forecasts/{forecast_id}", tags=["Forecasts"], response_model=ForecastSchema)
 def get_forecast(forecast_id: int, db: Session = Depends(get_db)):
     forecast = db.scalar(select(Forecast).where(Forecast.id == forecast_id))
-    if forecast is None:
-        raise HTTPException(status_code=404, detail="Forecast not found")
-    return {
-        "city_id": forecast.city_id,
-        "datetime": forecast.datetime,
-        "forecasted_temperature": forecast.forecasted_temperature,
-        "forecasted_humidity": forecast.forecasted_humidity,
-    }
-
-
-@app.put("/forecasts/{forecast_id}", tags=["Forecasts"], response_model=ForecastMessage)
-async def update_forecast(
-    forecast_id: int,
-    request: Request,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Insufficient privileges")
-
-    data = await request.json()
-    forecast = db.scalar(select(Forecast).where(Forecast.id == forecast_id))
-
     if forecast is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Forecast not found"
         )
+    return forecast
 
-    update_data = {}
-    if "city_id" in data:
-        update_data[Forecast.city_id] = data["city_id"]
-    if "datetime" in data:
-        datetime_str = data["datetime"]
-        update_data[Forecast.datetime] = datetime.strptime(
-            datetime_str, "%Y-%m-%d %H:%M:%S"
-        )
-    if "forecasted_temperature" in data:
-        update_data[Forecast.forecasted_temperature] = data["forecasted_temperature"]
-    if "forecasted_humidity" in data:
-        update_data[Forecast.forecasted_humidity] = data["forecasted_humidity"]
 
-    if update_data:
-        db.execute(
-            update(Forecast).where(Forecast.id == forecast.id).values(**update_data)
+@app.put(
+    "/forecasts/{forecast_id}",
+    tags=["Forecasts"],
+    response_model=MessageSchema,
+    status_code=status.HTTP_201_CREATED,
+)
+async def update_forecast(
+    forecast_id: int,
+    forecast: ForecastUpdateSchema,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient privileges"
         )
+
+    db_forecast = db.scalar(select(Forecast).where(Forecast.id == forecast_id))
+
+    if db_forecast is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Forecast not found"
+        )
+
+    db.execute(update(Forecast).where(Forecast.id == forecast_id).values(**forecast))
 
     return {"message": "Forecast updated successfully"}
 
 
 @app.delete(
-    "/forecasts/{forecast_id}", tags=["Forecasts"], response_model=ForecastMessage
+    "/forecasts/{forecast_id}", tags=["Forecasts"], response_model=MessageSchema
 )
 def delete_forecast(
     forecast_id: int,
@@ -167,18 +125,22 @@ def delete_forecast(
     current_user: User = Depends(get_current_user),
 ):
     if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Insufficient privileges")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient privileges"
+        )
 
     forecast = db.scalar(
         delete(Forecast).where(Forecast.id == forecast_id).returning(Forecast)
     )
     if forecast is None:
-        raise HTTPException(status_code=404, detail="Forecast not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Forecast not found"
+        )
 
     return {"message": "Forecast deleted successfully"}
 
 
-@app.post("/token", tags=["Authorization"])
+@app.post("/token", tags=["Authorization"], response_model=AccessTokenSchema)
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
 ):
@@ -189,8 +151,7 @@ async def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_token(data={"sub": user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return create_access_token(data={"sub": user.username})
 
 
 def custom_openapi():

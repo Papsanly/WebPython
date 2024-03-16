@@ -8,6 +8,7 @@ from passlib.context import CryptContext
 from sqlalchemy import select, insert
 from sqlalchemy.orm import Session
 
+from lab1.schemas import AccessTokenSchema
 from models import User, get_db
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -33,7 +34,7 @@ def create_access_token(data: dict):
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+    return AccessTokenSchema(access_token=encoded_jwt, token_type="bearer")
 
 
 def authenticate_user(db: Session, username: str, password: str) -> User | None:

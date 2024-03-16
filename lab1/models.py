@@ -1,6 +1,5 @@
 from datetime import datetime
 
-from pydantic import BaseModel
 from sqlalchemy import create_engine, ForeignKey
 from sqlalchemy.orm import (
     sessionmaker,
@@ -61,14 +60,3 @@ class Forecast(Base):
     datetime: Mapped[datetime]
     forecasted_temperature: Mapped[float]
     forecasted_humidity: Mapped[float]
-
-
-class ForecastResponse(BaseModel):
-    city_id: int
-    datetime: datetime
-    forecasted_temperature: float
-    forecasted_humidity: float
-
-
-class ForecastMessage(BaseModel):
-    message: str
