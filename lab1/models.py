@@ -10,8 +10,6 @@ from sqlalchemy.orm import (
     MappedAsDataclass,
 )
 
-from authorization import create_superadmin, create_user
-
 DATABASE_URL = "sqlite:///./sqlite.db"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
@@ -21,8 +19,6 @@ Session = sessionmaker(engine, autoflush=False)
 def get_db():
     db = Session()
     try:
-        create_superadmin(db)
-        create_user(db)
         yield db
     finally:
         db.close()
