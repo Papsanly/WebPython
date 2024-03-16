@@ -2,7 +2,13 @@ from datetime import datetime
 
 from pydantic import BaseModel
 from sqlalchemy import Integer, String, create_engine, ForeignKey
-from sqlalchemy.orm import sessionmaker, Mapped, mapped_column, DeclarativeBase
+from sqlalchemy.orm import (
+    sessionmaker,
+    Mapped,
+    mapped_column,
+    DeclarativeBase,
+    MappedAsDataclass,
+)
 
 from authorization import create_superadmin, create_user
 
@@ -22,7 +28,7 @@ def get_db():
         db.close()
 
 
-class Base(DeclarativeBase):
+class Base(MappedAsDataclass, DeclarativeBase):
     pass
 
 
@@ -35,9 +41,6 @@ class User(Base):
     hashed_password: Mapped[str]
     role: Mapped[str] = mapped_column(String, default="user")
 
-    def __repr__(self):
-        return self.username
-
 
 class Country(Base):
     __tablename__ = "countries"
@@ -46,18 +49,12 @@ class Country(Base):
     name: Mapped[str] = mapped_column(String, unique=True)
     code: Mapped[str] = mapped_column(String, unique=True)
 
-    def __repr__(self):
-        return self.name
-
 
 class City(Base):
     __tablename__ = "cities"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True)
     country_id: Mapped[int] = mapped_column(Integer, ForeignKey("countries.id"))
-
-    def __repr__(self):
-        return f"City(name={self.name}, country_id={self.country_id})"
 
 
 class Forecast(Base):
