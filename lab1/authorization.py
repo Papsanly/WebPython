@@ -87,7 +87,7 @@ def get_current_user(
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-        user = db.query(User).filter(User.username == username).first()
+        user = db.scalar(select(User).where(User.username == username))
         if user is None:
             raise credentials_exception
         return user
