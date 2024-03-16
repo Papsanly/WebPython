@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime
+from datetime import datetime
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, HTTPException, Depends, status
@@ -12,7 +12,6 @@ from authorization import (
     get_current_user,
     authenticate_user,
     create_access_token,
-    ACCESS_TOKEN_EXPIRE_MINUTES,
     create_user,
     create_superadmin,
 )
@@ -194,10 +193,7 @@ async def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
+    access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
 
