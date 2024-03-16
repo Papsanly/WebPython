@@ -59,6 +59,15 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return templates.TemplateResponse(
+        name="error.html",
+        request=request,
+        context={"code": exc.status_code, "detail": exc.detail},
+    )
+
+
 @app.get("/", tags=["Forecasts"], response_class=HTMLResponse)
 def index(request: Request, user: Annotated[User | None, Depends(get_current_user)]):
     return templates.TemplateResponse(
