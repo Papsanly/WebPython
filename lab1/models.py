@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy import Integer, String, create_engine, ForeignKey
+from sqlalchemy import create_engine, ForeignKey
 from sqlalchemy.orm import (
     sessionmaker,
     Mapped,
@@ -31,35 +31,33 @@ class Base(MappedAsDataclass, DeclarativeBase):
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    username: Mapped[str] = mapped_column(String, unique=True, index=True)
-    email: Mapped[str] = mapped_column(String, unique=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    username: Mapped[str] = mapped_column(unique=True, index=True)
+    email: Mapped[str] = mapped_column(unique=True, index=True)
     hashed_password: Mapped[str]
-    role: Mapped[str] = mapped_column(String, default="user")
+    role: Mapped[str] = mapped_column(default="user")
 
 
 class Country(Base):
     __tablename__ = "countries"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String, unique=True)
-    code: Mapped[str] = mapped_column(String, unique=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(unique=True)
+    code: Mapped[str] = mapped_column(unique=True)
 
 
 class City(Base):
     __tablename__ = "cities"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String, unique=True)
-    country_id: Mapped[int] = mapped_column(Integer, ForeignKey("countries.id"))
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(unique=True)
+    country_id: Mapped[int] = mapped_column(ForeignKey("countries.id"))
 
 
 class Forecast(Base):
     __tablename__ = "forecasts"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    city_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("cities.id"), name="city_id_fk"
-    )
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    city_id: Mapped[int] = mapped_column(ForeignKey("cities.id"), name="city_id_fk")
     datetime: Mapped[datetime]
     forecasted_temperature: Mapped[float]
     forecasted_humidity: Mapped[float]
