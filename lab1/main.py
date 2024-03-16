@@ -31,7 +31,6 @@ from models import (
 )
 from schemas import (
     ForecastSchema,
-    ForecastUpdateSchema,
 )
 
 
@@ -83,6 +82,23 @@ def index(request: Request, user: Annotated[User | None, Depends(get_current_use
 def create_forecast(request: Request, user: Annotated[User, Depends(get_superadmin)]):
     return templates.TemplateResponse(
         name="create_forecast.html", request=request, context={"user": user}
+    )
+
+
+@app.get(
+    "/edit-forecast/{forecast_id}", tags=["Forecasts"], response_class=HTMLResponse
+)
+def edit_forecast(
+    request: Request,
+    forecast_id: int,
+    user: Annotated[User, Depends(get_superadmin)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    forecast = db.scalar(select(Forecast).where(Forecast.id == forecast_id))
+    return templates.TemplateResponse(
+        name="edit_forecast.html",
+        request=request,
+        context={"user": user, "forecast": forecast},
     )
 
 
@@ -158,7 +174,7 @@ def get_forecast(
     )
 
 
-@app.put(
+@app.post(
     "/forecasts/{forecast_id}",
     tags=["Forecasts"],
     response_model=ForecastSchema,
@@ -167,7 +183,10 @@ def get_forecast(
 async def update_forecast(
     request: Request,
     forecast_id: int,
-    forecast: ForecastUpdateSchema,
+    city_id: Annotated[int, Form()],
+    forecast_datetime: Annotated[datetime, Form()],
+    forecasted_temperature: Annotated[int, Form()],
+    forecasted_humidity: Annotated[int, Form()],
     db: Annotated[Session, Depends(get_db)],
     user: Annotated[User, Depends(get_superadmin)],
 ):
@@ -178,12 +197,19 @@ async def update_forecast(
             status_code=status.HTTP_404_NOT_FOUND, detail="Forecast not found"
         )
 
-    if db.scalar(select(City).where(City.id == forecast.city_id)) is None:
+    if db.scalar(select(City).where(City.id == city_id)) is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="City not found"
         )
     db.execute(
-        update(Forecast).where(Forecast.id == forecast_id).values(**forecast.dict())
+        update(Forecast)
+        .where(Forecast.id == forecast_id)
+        .values(
+            city_id=city_id,
+            datetime=forecast_datetime,
+            forecasted_temperature=forecasted_temperature,
+            forecasted_humidity=forecasted_humidity,
+        )
     )
     db.commit()
     db.refresh(db_forecast)

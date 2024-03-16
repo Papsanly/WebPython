@@ -10,13 +10,6 @@ class ForecastSchema(BaseModel):
     forecasted_humidity: float
 
 
-class ForecastUpdateSchema(BaseModel):
-    city_id: int | None
-    datetime: datetime | None
-    forecasted_temperature: float | None
-    forecasted_humidity: float | None
-
-
 class AccessTokenSchema(BaseModel):
     access_token: str
     token_type: str

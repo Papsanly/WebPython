@@ -18,7 +18,7 @@
         <p>Temperature: {{ forecast.forecasted_temperature }}</p>
         <p>Humidity: {{ forecast.forecasted_humidity }}</p>
         {% if user is not none %}
-          <button>Edit</button>
+          <button onclick="location.href = '{{ url_for("edit_forecast", forecast_id=forecast.id) }}'">Edit</button>
           <button onclick="delete_forecast({{ forecast.id }})">Delete</button>
         {% endif %}
       </li>
