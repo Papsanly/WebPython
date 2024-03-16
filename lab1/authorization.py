@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import APIKeyCookie
-from jose import JWTError, jwt
+from jose import JWTError, jwt, ExpiredSignatureError
 from passlib.context import CryptContext
 from sqlalchemy import select, insert
 from sqlalchemy.orm import Session
@@ -96,6 +96,8 @@ def get_current_user(
         if user is None:
             raise credentials_exception
         return user
+    except ExpiredSignatureError:
+        return None
     except JWTError:
         raise credentials_exception
 

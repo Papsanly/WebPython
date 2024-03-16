@@ -2,7 +2,8 @@ from datetime import datetime
 from typing import Annotated
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request, HTTPException, Depends, status
+from fastapi import FastAPI, Request, HTTPException, Depends, status, Form
+from fastapi.exceptions import HTTPException as StarletteHTTPException
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -59,8 +60,11 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(
+    request: Request,
+    exc: HTTPException,
+):
     return templates.TemplateResponse(
         name="error.html",
         request=request,
@@ -75,50 +79,77 @@ def index(request: Request, user: Annotated[User | None, Depends(get_current_use
     )
 
 
+@app.get("/create-forecast", tags=["Forecasts"], response_class=HTMLResponse)
+def create_forecast(request: Request, user: Annotated[User, Depends(get_superadmin)]):
+    return templates.TemplateResponse(
+        name="create_forecast.html", request=request, context={"user": user}
+    )
+
+
 @app.post(
-    "/forecasts/",
+    "/forecasts",
     tags=["Forecasts"],
-    response_model=ForecastSchema,
+    response_class=HTMLResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_forecast(
-    forecast: ForecastSchema,
+    request: Request,
+    city_id: Annotated[int, Form()],
+    forecast_datetime: Annotated[datetime, Form()],
+    forecasted_temperature: Annotated[int, Form()],
+    forecasted_humidity: Annotated[int, Form()],
     db: Annotated[Session, Depends(get_db)],
-    _current_user: Annotated[User, Depends(get_superadmin)],
+    user: Annotated[User, Depends(get_superadmin)],
 ):
-    if db.scalar(select(City).where(City.id == forecast.city_id)) is None:
+    if db.scalar(select(City).where(City.id == city_id)) is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="City not found"
         )
-    forecast = db.scalar(insert(Forecast).values(**forecast.dict()).returning(Forecast))
+    forecast = db.scalar(
+        insert(Forecast)
+        .values(
+            city_id=city_id,
+            datetime=forecast_datetime,
+            forecasted_temperature=forecasted_temperature,
+            forecasted_humidity=forecasted_humidity,
+        )
+        .returning(Forecast)
+    )
     db.commit()
     db.refresh(forecast)
-    return forecast
+    return templates.TemplateResponse(
+        name="message.html",
+        request=request,
+        context={"user": user, "message": "Forecast created successfully"},
+    )
 
 
 @app.get("/forecasts", tags=["Forecasts"], response_class=HTMLResponse)
 def get_forecast(
     request: Request,
     city_name: str,
-    forecast_datetime_from: datetime,
-    forecast_datetime_to: datetime,
     db: Annotated[Session, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_user)],
+    forecast_datetime_from: datetime | None = None,
+    forecast_datetime_to: datetime | None = None,
 ):
     forecasts = db.scalars(
         select(Forecast)
         .join(City, City.id == Forecast.city_id)
-        .where(City.name == city_name)
-        .where(Forecast.datetime <= forecast_datetime_to)
-        .where(Forecast.datetime >= forecast_datetime_from)
+        .where(City.name == city_name.lower())
+        .where(Forecast.datetime <= (forecast_datetime_to or datetime.max))
+        .where(Forecast.datetime >= (forecast_datetime_from or datetime.min))
+        .order_by(Forecast.datetime)
     ).all()
     if len(forecasts) == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Forecasts not found"
         )
     return templates.TemplateResponse(
-        name="search_forecast.html",
+        name="forecasts.html",
         request=request,
         context={
+            "user": user,
             "city_name": city_name,
             "forecast_datetime_from": forecast_datetime_from,
             "forecast_datetime_to": forecast_datetime_to,
@@ -134,10 +165,11 @@ def get_forecast(
     status_code=status.HTTP_201_CREATED,
 )
 async def update_forecast(
+    request: Request,
     forecast_id: int,
     forecast: ForecastUpdateSchema,
     db: Annotated[Session, Depends(get_db)],
-    _current_user: Annotated[User, Depends(get_superadmin)],
+    user: Annotated[User, Depends(get_superadmin)],
 ):
     db_forecast = db.scalar(select(Forecast).where(Forecast.id == forecast_id))
 
@@ -156,33 +188,42 @@ async def update_forecast(
     db.commit()
     db.refresh(db_forecast)
 
-    return db_forecast
+    return templates.TemplateResponse(
+        name="message.html",
+        request=request,
+        context={"user": user, "message": "Forecast updated successfully"},
+    )
 
 
 @app.delete(
     "/forecasts/{forecast_id}", tags=["Forecasts"], response_model=ForecastSchema
 )
 def delete_forecast(
+    request: Request,
     forecast_id: int,
     db: Annotated[Session, Depends(get_db)],
-    _current_user: Annotated[User, Depends(get_superadmin)],
+    user: Annotated[User, Depends(get_superadmin)],
 ):
     forecast = db.scalar(
         delete(Forecast).where(Forecast.id == forecast_id).returning(Forecast)
     )
+    db.commit()
     if forecast is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Forecast not found"
         )
-    return forecast
+    return templates.TemplateResponse(
+        name="message.html",
+        request=request,
+        context={"user": user, "message": "Forecast deleted successfully"},
+    )
 
 
 @app.get("/login", tags=["Authorization"], response_class=HTMLResponse)
-async def login(request: Request, user: Annotated[User, Depends(get_current_user)]):
+async def login(request: Request):
     return templates.TemplateResponse(
         name="login.html",
         request=request,
-        context={"user": user, "show_login_btn": False},
     )
 
 

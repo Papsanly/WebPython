@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% set show_create_forecast_btn = False %}
+{% block content %}
+  <h2>Create forecast</h2>
+  <form method="post" action="/forecasts">
+    <div>
+      <label for="city_id">City Id</label>
+      <input type="number" id="city_id" name="city_id" required>
+    </div>
+    <div>
+      <label for="datetime">Datetime</label>
+      <input type="datetime-local" id="datetime" name="forecast_datetime" required>
+    </div>
+    <div>
+      <label for="temperature">Forecasted temperature</label>
+      <input type="number" id="temperature" name="forecasted_temperature" required>
+    </div>
+    <div>
+      <label for="humidity">Forecasted humidity</label>
+      <input type="number" id="humidity" name="forecasted_humidity" required>
+    </div>
+    <button type="submit">Submit</button>
+  </form>
+{% endblock %}

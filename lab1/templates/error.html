@@ -1,5 +1,7 @@
 {% extends "base.html" %}
+{% set show_login_btn = False %}
+{% set show_create_forecast_btn = False %}
 {% block content %}
   <h1>{{ code }}</h1>
-  <h2>Detail {{ detail }}</h2>
+  <h2>{{ detail }}</h2>
 {% endblock %}
