@@ -16,6 +16,7 @@ from authorization import (
     create_superadmin,
 )
 from models import (
+    SessionLocal,
     engine,
     ForecastResponse,
     get_db,
@@ -28,7 +29,7 @@ from models import (
 
 async def startup_event():
     Base.metadata.create_all(bind=engine)
-    db = Session()
+    db = SessionLocal()
     try:
         create_superadmin(db)
         create_user(db)
