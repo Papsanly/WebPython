@@ -1,7 +1,12 @@
+from datetime import datetime
+from typing import Annotated
+
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, HTTPException, Depends, status
 from fastapi.openapi.utils import get_openapi
+from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select, insert, update, delete
 from sqlalchemy.orm import Session
@@ -12,6 +17,7 @@ from authorization import (
     create_example_user,
     create_superadmin,
     get_superadmin,
+    get_current_user,
 )
 from models import (
     SessionLocal,
@@ -20,10 +26,10 @@ from models import (
     User,
     Forecast,
     Base,
+    City,
 )
 from schemas import (
     ForecastSchema,
-    MessageSchema,
     AccessTokenSchema,
     ForecastUpdateSchema,
 )
@@ -50,13 +56,15 @@ app = FastAPI(
 )
 
 app.add_event_handler("startup", startup_event)
-
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
-@app.get("/", tags=["Forecasts"])
-def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+@app.get("/", tags=["Forecasts"], response_class=HTMLResponse)
+def index(request: Request, user: Annotated[User | None, Depends(get_current_user)]):
+    return templates.TemplateResponse(
+        name="index.html", request=request, context={"user": user}
+    )
 
 
 @app.post(
@@ -67,36 +75,61 @@ def index(request: Request):
 )
 async def create_forecast(
     forecast: ForecastSchema,
-    db: Session = Depends(get_db),
-    _current_user: User = Depends(get_superadmin),
+    db: Annotated[Session, Depends(get_db)],
+    _current_user: Annotated[User, Depends(get_superadmin)],
 ):
+    if db.scalar(select(City).where(City.id == forecast.city_id)) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="City not found"
+        )
     forecast = db.scalar(insert(Forecast).values(**forecast.dict()).returning(Forecast))
     db.commit()
     db.refresh(forecast)
     return forecast
 
 
-@app.get("/forecasts/{forecast_id}", tags=["Forecasts"], response_model=ForecastSchema)
-def get_forecast(forecast_id: int, db: Session = Depends(get_db)):
-    forecast = db.scalar(select(Forecast).where(Forecast.id == forecast_id))
-    if forecast is None:
+@app.get("/forecasts", tags=["Forecasts"], response_class=HTMLResponse)
+def get_forecast(
+    request: Request,
+    city_name: str,
+    forecast_datetime_from: datetime,
+    forecast_datetime_to: datetime,
+    db: Annotated[Session, Depends(get_db)],
+):
+    forecasts = db.scalars(
+        select(Forecast)
+        .join(City, City.id == Forecast.city_id)
+        .where(City.name == city_name)
+        .where(Forecast.datetime <= forecast_datetime_to)
+        .where(Forecast.datetime >= forecast_datetime_from)
+    ).all()
+    if len(forecasts) == 0:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Forecast not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Forecasts not found"
         )
-    return forecast
+    return templates.TemplateResponse(
+        name="search_forecast.html",
+        request=request,
+        context={
+            "city_name": city_name,
+            "forecast_datetime_from": forecast_datetime_from,
+            "forecast_datetime_to": forecast_datetime_to,
+            "forecasts": forecasts,
+        },
+    )
 
 
 @app.put(
     "/forecasts/{forecast_id}",
     tags=["Forecasts"],
-    response_model=MessageSchema,
+    response_model=ForecastSchema,
     status_code=status.HTTP_201_CREATED,
 )
 async def update_forecast(
     forecast_id: int,
     forecast: ForecastUpdateSchema,
-    db: Session = Depends(get_db),
-    _current_user: User = Depends(get_superadmin),
+    db: Annotated[Session, Depends(get_db)],
+    _current_user: Annotated[User, Depends(get_superadmin)],
 ):
     db_forecast = db.scalar(select(Forecast).where(Forecast.id == forecast_id))
 
@@ -105,21 +138,26 @@ async def update_forecast(
             status_code=status.HTTP_404_NOT_FOUND, detail="Forecast not found"
         )
 
+    if db.scalar(select(City).where(City.id == forecast.city_id)) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="City not found"
+        )
     db.execute(
         update(Forecast).where(Forecast.id == forecast_id).values(**forecast.dict())
     )
     db.commit()
+    db.refresh(db_forecast)
 
-    return MessageSchema(message="Forecast updated successfully")
+    return db_forecast
 
 
 @app.delete(
-    "/forecasts/{forecast_id}", tags=["Forecasts"], response_model=MessageSchema
+    "/forecasts/{forecast_id}", tags=["Forecasts"], response_model=ForecastSchema
 )
 def delete_forecast(
     forecast_id: int,
-    db: Session = Depends(get_db),
-    _current_user: User = Depends(get_superadmin),
+    db: Annotated[Session, Depends(get_db)],
+    _current_user: Annotated[User, Depends(get_superadmin)],
 ):
     forecast = db.scalar(
         delete(Forecast).where(Forecast.id == forecast_id).returning(Forecast)
@@ -128,13 +166,13 @@ def delete_forecast(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Forecast not found"
         )
-
-    return MessageSchema(message="Forecast deleted successfully")
+    return forecast
 
 
 @app.post("/token", tags=["Authorization"], response_model=AccessTokenSchema)
 async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Annotated[Session, Depends(get_db)],
 ):
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:

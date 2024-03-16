@@ -1,16 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Weather Forecasts</title>
-</head>
-<body>
-    <h1>Weather Forecasts</h1>
-    <h2>Search for forecast</h2>
-    <form id="forecastForm" method="get" action="/forecasts">
-        <input type="number" name="city_id" placeholder="City ID" required>
-        <input type="text" name="datetime" placeholder="YYYY-MM-DD HH:MM:SS" required>
-        <button type="submit">Submit Forecast</button>
-    </form>
-</body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+  <form id="forecastForm" method="get" action="/forecasts">
+    <div>
+      <label for="city_name">
+        City Name:
+      </label>
+      <input id="city_name" name="city_name" required>
+    </div>
+    <div>
+      <label for="datetime_from">
+        Datetime From:
+      </label>
+      <input id="datetime_from" type="datetime-local" name="forecast_datetime_from" required>
+    </div>
+    <div>
+      <label for="datetime_to">
+        Datetime To:
+      </label>
+      <input id="datetime_to" type="datetime-local" name="forecast_datetime_to" required>
+    </div>
+    <button type="submit">Search Forecast</button>
+  </form>
+{% endblock %}

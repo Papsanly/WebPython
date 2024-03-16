@@ -17,10 +17,6 @@ class ForecastUpdateSchema(BaseModel):
     forecasted_humidity: float | None
 
 
-class MessageSchema(BaseModel):
-    message: str
-
-
 class AccessTokenSchema(BaseModel):
     access_token: str
     token_type: str

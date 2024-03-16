@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta
+from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -25,7 +26,7 @@ def get_password_hash(password):
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
 
 def create_access_token(data: dict):
@@ -76,8 +77,11 @@ def create_example_user(db: Session):
 
 
 def get_current_user(
-    db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)
-):
+    db: Annotated[Session, Depends(get_db)],
+    token: Annotated[str, Depends(oauth2_scheme)],
+) -> User | None:
+    if token is None:
+        return None
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -96,8 +100,8 @@ def get_current_user(
         raise credentials_exception
 
 
-def get_superadmin(user: User = Depends(get_current_user)):
-    if user.role != "admin":
+def get_superadmin(user: Annotated[User, Depends(get_current_user)]):
+    if user is None or user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user doesn't have enough privileges",

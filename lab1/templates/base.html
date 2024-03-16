@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Weather Forecasts</title>
+  <link rel="stylesheet" href={{ url_for("static", path="/style.css") }}/>
+</head>
+<body>
+<a href={{ url_for("index") }}><h1>Weather Forecasts</h1></a>
+{% if not user %}
+  <button>Login</button>
+{% else %}
+  <h2>Logged in as {{ user.username }}</h2>
+  <button>Log out</button>
+{% endif %}
+{% block content %}{% endblock %}
+</body>
+</html>

@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import create_engine, ForeignKey
+from sqlalchemy import event
 from sqlalchemy.orm import (
     sessionmaker,
     Mapped,
@@ -9,9 +10,15 @@ from sqlalchemy.orm import (
     MappedAsDataclass,
 )
 
+
+def _fk_pragma_on_connect(dbapi_con, _con_record):
+    dbapi_con.execute("pragma foreign_keys=ON")
+
+
 DATABASE_URL = "sqlite:///./sqlite.db"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+event.listen(engine, "connect", _fk_pragma_on_connect)
 SessionLocal = sessionmaker(engine, autoflush=False)
 
 
@@ -56,7 +63,7 @@ class Forecast(Base):
     __tablename__ = "forecasts"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    city_id: Mapped[int] = mapped_column(ForeignKey("cities.id"), name="city_id_fk")
+    city_id: Mapped[int] = mapped_column(ForeignKey("cities.id"))
     datetime: Mapped[datetime]
     forecasted_temperature: Mapped[float]
     forecasted_humidity: Mapped[float]
