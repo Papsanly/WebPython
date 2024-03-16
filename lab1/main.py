@@ -28,6 +28,12 @@ from models import (
 
 async def startup_event():
     Base.metadata.create_all(bind=engine)
+    db = Session()
+    try:
+        create_superadmin(db)
+        create_user(db)
+    finally:
+        db.close()
 
 
 app = FastAPI(
@@ -43,17 +49,6 @@ app = FastAPI(
 app.add_event_handler("startup", startup_event)
 
 templates = Jinja2Templates(directory="templates")
-
-
-@app.on_event("startup")
-async def startup_event():
-    Base.metadata.create_all(engine)
-    db = Session()
-    try:
-        create_superadmin(db)
-        create_user(db)
-    finally:
-        db.close()
 
 
 @app.get("/", tags=["Forecasts"])
