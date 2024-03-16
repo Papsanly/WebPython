@@ -4,7 +4,7 @@ from typing import Annotated
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, HTTPException, Depends, status
 from fastapi.openapi.utils import get_openapi
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -30,7 +30,6 @@ from models import (
 )
 from schemas import (
     ForecastSchema,
-    AccessTokenSchema,
     ForecastUpdateSchema,
 )
 
@@ -169,8 +168,24 @@ def delete_forecast(
     return forecast
 
 
-@app.post("/token", tags=["Authorization"], response_model=AccessTokenSchema)
-async def login_for_access_token(
+@app.get("/login", tags=["Authorization"], response_class=HTMLResponse)
+async def login(request: Request, user: Annotated[User, Depends(get_current_user)]):
+    return templates.TemplateResponse(
+        name="login.html",
+        request=request,
+        context={"user": user, "show_login_btn": False},
+    )
+
+
+@app.get("/logout", tags=["Authorization"], response_class=RedirectResponse)
+async def logout():
+    response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+    response.delete_cookie("token")
+    return response
+
+
+@app.post("/token", tags=["Authorization"], response_class=RedirectResponse)
+async def get_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[Session, Depends(get_db)],
 ):
@@ -181,7 +196,10 @@ async def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return create_access_token(data={"sub": user.username})
+    token = create_access_token(data={"sub": user.username})
+    response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+    response.set_cookie(key="token", value=token.access_token)
+    return response
 
 
 def custom_openapi():

@@ -7,11 +7,13 @@
 </head>
 <body>
 <a href={{ url_for("index") }}><h1>Weather Forecasts</h1></a>
-{% if not user %}
-  <button>Login</button>
-{% else %}
-  <h2>Logged in as {{ user.username }}</h2>
-  <button>Log out</button>
+{% if show_login_btn|default(True) %}
+  {% if not user %}
+    <p><a href={{ url_for("login") }}>Login</a></p>
+  {% else %}
+    <h2>Logged in as {{ user.username }}</h2>
+    <p><a href={{ url_for("logout") }}>Log out</a></p>
+  {% endif %}
 {% endif %}
 {% block content %}{% endblock %}
 </body>

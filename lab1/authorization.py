@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import APIKeyCookie
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy import select, insert
@@ -26,7 +26,7 @@ def get_password_hash(password):
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
+api_key_scheme = APIKeyCookie(name="token", auto_error=False)
 
 
 def create_access_token(data: dict):
@@ -78,7 +78,7 @@ def create_example_user(db: Session):
 
 def get_current_user(
     db: Annotated[Session, Depends(get_db)],
-    token: Annotated[str, Depends(oauth2_scheme)],
+    token: Annotated[str, Depends(api_key_scheme)],
 ) -> User | None:
     if token is None:
         return None
