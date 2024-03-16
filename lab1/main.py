@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request, HTTPException, Depends, status
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select, insert, update
+from sqlalchemy import select, insert, update, delete
 from sqlalchemy.orm import Session
 
 from authorization import (
@@ -174,11 +174,11 @@ def delete_forecast(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Insufficient privileges")
 
-    forecast = db.scalar(select(Forecast).where(Forecast.id == forecast_id))
+    forecast = db.scalar(
+        delete(Forecast).where(Forecast.id == forecast_id).returning(Forecast)
+    )
     if forecast is None:
         raise HTTPException(status_code=404, detail="Forecast not found")
-
-    db.delete(forecast)
 
     return {"message": "Forecast deleted successfully"}
 
