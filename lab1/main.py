@@ -7,11 +7,11 @@ from sqlalchemy import select, insert, update, delete
 from sqlalchemy.orm import Session
 
 from authorization import (
-    get_current_user,
     authenticate_user,
     create_access_token,
     create_example_user,
     create_superadmin,
+    get_superadmin,
 )
 from models import (
     SessionLocal,
@@ -68,13 +68,12 @@ def index(request: Request):
 async def create_forecast(
     forecast: ForecastSchema,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    _current_user: User = Depends(get_superadmin),
 ):
-    if current_user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient privileges"
-        )
-    return db.scalar(insert(Forecast).values(**forecast).returning(Forecast))
+    forecast = db.scalar(insert(Forecast).values(**forecast.dict()).returning(Forecast))
+    db.commit()
+    db.refresh(forecast)
+    return forecast
 
 
 @app.get("/forecasts/{forecast_id}", tags=["Forecasts"], response_model=ForecastSchema)
@@ -97,13 +96,8 @@ async def update_forecast(
     forecast_id: int,
     forecast: ForecastUpdateSchema,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    _current_user: User = Depends(get_superadmin),
 ):
-    if current_user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient privileges"
-        )
-
     db_forecast = db.scalar(select(Forecast).where(Forecast.id == forecast_id))
 
     if db_forecast is None:
@@ -111,9 +105,12 @@ async def update_forecast(
             status_code=status.HTTP_404_NOT_FOUND, detail="Forecast not found"
         )
 
-    db.execute(update(Forecast).where(Forecast.id == forecast_id).values(**forecast))
+    db.execute(
+        update(Forecast).where(Forecast.id == forecast_id).values(**forecast.dict())
+    )
+    db.commit()
 
-    return {"message": "Forecast updated successfully"}
+    return MessageSchema(message="Forecast updated successfully")
 
 
 @app.delete(
@@ -122,13 +119,8 @@ async def update_forecast(
 def delete_forecast(
     forecast_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    _current_user: User = Depends(get_superadmin),
 ):
-    if current_user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient privileges"
-        )
-
     forecast = db.scalar(
         delete(Forecast).where(Forecast.id == forecast_id).returning(Forecast)
     )
@@ -137,7 +129,7 @@ def delete_forecast(
             status_code=status.HTTP_404_NOT_FOUND, detail="Forecast not found"
         )
 
-    return {"message": "Forecast deleted successfully"}
+    return MessageSchema(message="Forecast deleted successfully")
 
 
 @app.post("/token", tags=["Authorization"], response_model=AccessTokenSchema)
