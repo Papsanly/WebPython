@@ -5,7 +5,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from sqlalchemy import select
+from sqlalchemy import select, insert
 from sqlalchemy.orm import Session
 
 from models import User, get_db
@@ -48,28 +48,29 @@ def create_superadmin(db: Session):
     password = os.getenv("SUPERADMIN_PASSWORD")
     superadmin = db.scalar(select(User).where(User.email == email))
     if not superadmin:
-        superadmin_user = User(
-            username="superadmin",
-            email=email,
-            hashed_password=get_password_hash(password),
-            role="admin",
+        db.execute(
+            insert(User).values(
+                username="superadmin",
+                email=email,
+                hashed_password=get_password_hash(password),
+                role="admin",
+            )
         )
-        db.add(superadmin_user)
-        db.commit()
 
 
-def create_user(db: Session):
-    email = os.getenv("SUPERADMIN_EMAIL")
-    superadmin = db.scalar(select(User).where(User.email == email))
-    if not superadmin:
-        superadmin_user = User(
-            username="user",
-            email=email,
-            hashed_password=get_password_hash("userpassword"),
-            role="user",
+def create_example_user(db: Session):
+    email = "user@example.com"
+    password = "userpasswordexample"
+    user = db.scalar(select(User).where(User.email == email))
+    if not user:
+        db.execute(
+            insert(User).values(
+                username="user",
+                email=email,
+                hashed_password=get_password_hash(password),
+                role="user",
+            )
         )
-        db.add(superadmin_user)
-        db.commit()
 
 
 def get_current_user(

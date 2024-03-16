@@ -12,7 +12,7 @@ from authorization import (
     get_current_user,
     authenticate_user,
     create_access_token,
-    create_user,
+    create_example_user,
     create_superadmin,
 )
 from models import (
@@ -32,7 +32,7 @@ async def startup_event():
     db = SessionLocal()
     try:
         create_superadmin(db)
-        create_user(db)
+        create_example_user(db)
     finally:
         db.close()
 
