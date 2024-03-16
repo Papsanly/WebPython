@@ -9,7 +9,7 @@ from authorization import create_superadmin, create_user
 DATABASE_URL = "sqlite:///./sqlite.db"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-Session = sessionmaker(engine, autocommit=False, autoflush=False)
+Session = sessionmaker(engine, autoflush=False)
 
 
 def get_db():

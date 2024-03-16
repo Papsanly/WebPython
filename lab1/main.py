@@ -159,7 +159,6 @@ async def update_forecast(
         db.execute(
             update(Forecast).where(Forecast.id == forecast.id).values(**update_data)
         )
-        db.commit()
 
     return {"message": "Forecast updated successfully"}
 
@@ -180,7 +179,6 @@ def delete_forecast(
         raise HTTPException(status_code=404, detail="Forecast not found")
 
     db.delete(forecast)
-    db.commit()
 
     return {"message": "Forecast deleted successfully"}
 
