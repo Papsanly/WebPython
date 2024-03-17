@@ -79,9 +79,16 @@ def index(request: Request, user: Annotated[User | None, Depends(get_current_use
 
 
 @app.get("/create-forecast", tags=["Forecasts"], response_class=HTMLResponse)
-def create_forecast(request: Request, user: Annotated[User, Depends(get_superadmin)]):
+def create_forecast(
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[User, Depends(get_superadmin)],
+):
+    cities = db.scalars(select(City)).all()
     return templates.TemplateResponse(
-        name="create_forecast.html", request=request, context={"user": user}
+        name="create_forecast.html",
+        request=request,
+        context={"user": user, "cities": cities},
     )
 
 
@@ -290,13 +297,10 @@ def custom_openapi():
         "This wonderful app is made by Andriy, Dmytro and Vladyslav.",
         routes=app.routes,
     )
-    openapi_schema["paths"]["/forecasts/"]["post"][
+    openapi_schema["paths"]["/forecasts"]["post"][
         "summary"
     ] = "Create a new forecast for the weather system"
-    openapi_schema["paths"]["/forecasts/{forecast_id}"]["get"][
-        "summary"
-    ] = "Get Weather Forecast by ID"
-    openapi_schema["paths"]["/forecasts/{forecast_id}"]["put"][
+    openapi_schema["paths"]["/forecasts/{forecast_id}"]["post"][
         "summary"
     ] = "Update Weather Forecast by ID"
     openapi_schema["paths"]["/forecasts/{forecast_id}"]["delete"][

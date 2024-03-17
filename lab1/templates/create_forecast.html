@@ -4,8 +4,12 @@
   <h2>Create forecast</h2>
   <form method="post" action="/forecasts">
     <div>
-      <label for="city_id">City Id</label>
-      <input type="number" id="city_id" name="city_id" required>
+      <label for="city_id">City Name</label>
+      <select id="city_id" name="city_id" required>
+        {% for city in cities %}
+          <option value="{{ city.id }}">{{ city.name.capitalize() }}</option>
+        {% endfor %}
+      </select>
     </div>
     <div>
       <label for="datetime">Datetime</label>
