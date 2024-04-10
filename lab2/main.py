@@ -84,6 +84,32 @@ def create_forecast(
     )
 
 
+@app.get("/add-city", response_class=HTMLResponse)
+def add_city(
+    request: Request,
+    db: Annotated[Cursor, Depends(get_db)],
+    user=Depends(get_superadmin),
+):
+    countries = db.execute("select * from countries").fetchall()
+    return templates.TemplateResponse(
+        name="add_city.html",
+        request=request,
+        context={"user": user, "countries": countries},
+    )
+
+
+@app.get("/add-country", response_class=HTMLResponse)
+def add_country(
+    request: Request,
+    user=Depends(get_superadmin),
+):
+    return templates.TemplateResponse(
+        name="add_country.html",
+        request=request,
+        context={"user": user},
+    )
+
+
 @app.get(
     "/edit-forecast/{forecast_id}", tags=["Forecasts"], response_class=HTMLResponse
 )
@@ -95,10 +121,12 @@ def edit_forecast(
 ):
     db.execute("select * from forecasts where id = %s", (forecast_id,))
     forecast = db.fetchone()
+    db.execute("select * from cities")
+    cities = db.fetchall()
     return templates.TemplateResponse(
         name="edit_forecast.html",
         request=request,
-        context={"user": user, "forecast": forecast},
+        context={"user": user, "forecast": forecast, "cities": cities},
     )
 
 
@@ -112,8 +140,8 @@ async def create_forecast(
     request: Request,
     city_id: Annotated[int, Form()],
     forecast_datetime: Annotated[datetime, Form()],
-    forecasted_temperature: Annotated[int, Form()],
-    forecasted_humidity: Annotated[int, Form()],
+    forecasted_temperature: Annotated[float, Form()],
+    forecasted_humidity: Annotated[float, Form()],
     db: Annotated[Cursor, Depends(get_db)],
     user=Depends(get_superadmin),
 ):
@@ -134,6 +162,64 @@ async def create_forecast(
         name="message.html",
         request=request,
         context={"user": user, "message": "Forecast created successfully"},
+    )
+
+
+@app.post(
+    "/countries",
+    response_class=HTMLResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def add_country(
+    request: Request,
+    country_name: Annotated[str, Form()],
+    country_code: Annotated[str, Form()],
+    db: Annotated[Cursor, Depends(get_db)],
+    user=Depends(get_superadmin),
+):
+    db.execute(
+        """
+            insert into countries (name, code) 
+            VALUES (%s, %s)
+        """,
+        (country_name.lower(), country_code.lower()),
+    )
+    return templates.TemplateResponse(
+        name="message.html",
+        request=request,
+        context={"user": user, "message": "Country added successfully"},
+    )
+
+
+@app.post(
+    "/cities",
+    response_class=HTMLResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def add_city(
+    request: Request,
+    country_id: Annotated[int, Form()],
+    city_name: Annotated[str, Form()],
+    db: Annotated[Cursor, Depends(get_db)],
+    user=Depends(get_superadmin),
+):
+    db.execute("select * from countries where id = %s", (country_id,))
+    city = db.fetchone()
+    if city is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Country not found"
+        )
+    db.execute(
+        """
+            insert into cities (name, country_id) 
+            VALUES (%s, %s)
+        """,
+        (city_name.lower(), country_id),
+    )
+    return templates.TemplateResponse(
+        name="message.html",
+        request=request,
+        context={"user": user, "message": "City added successfully"},
     )
 
 
@@ -193,8 +279,8 @@ async def update_forecast(
     forecast_id: int,
     city_id: Annotated[int, Form()],
     forecast_datetime: Annotated[datetime, Form()],
-    forecasted_temperature: Annotated[int, Form()],
-    forecasted_humidity: Annotated[int, Form()],
+    forecasted_temperature: Annotated[float, Form()],
+    forecasted_humidity: Annotated[float, Form()],
     db: Annotated[Cursor, Depends(get_db)],
     user=Depends(get_superadmin),
 ):

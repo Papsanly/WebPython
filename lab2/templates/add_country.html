@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% set show_btns = False %}
+{% block content %}
+  <h2>Add city</h2>
+  <form method="post" action="/countries">
+    <div>
+      <label for="country_name">Country name</label>
+      <input id="country_name" name="country_name" required>
+    </div>
+    <div>
+      <label for="country_code">Country code</label>
+      <input id="country_code" name="country_code" required>
+    </div>
+    <button type="submit">Submit</button>
+  </form>
+{% endblock %}

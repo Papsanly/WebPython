@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% set show_create_forecast_btn = False %}
+{% set show_btns = False %}
 {% block content %}
   <h2>Create forecast</h2>
   <form method="post" action="/forecasts">
@@ -17,11 +17,11 @@
     </div>
     <div>
       <label for="temperature">Forecasted temperature</label>
-      <input type="number" id="temperature" name="forecasted_temperature" required>
+      <input type="number" step="0.01" id="temperature" name="forecasted_temperature" required>
     </div>
     <div>
       <label for="humidity">Forecasted humidity</label>
-      <input type="number" id="humidity" name="forecasted_humidity" required>
+      <input type="number" step="0.01" id="humidity" name="forecasted_humidity" required>
     </div>
     <button type="submit">Submit</button>
   </form>
