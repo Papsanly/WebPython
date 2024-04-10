@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% set show_create_forecast_btn = False %}
+{% block content %}
+  <h2>Edit forecast</h2>
+  <form action="/forecasts/{{ forecast.id }}" method="post">
+    <div>
+      <label for="city_id">City Id</label>
+      <input type="number" id="city_id" value="{{ forecast.city_id }}" name="city_id">
+    </div>
+    <div>
+      <label for="datetime">Datetime</label>
+      <input type="datetime-local" id="datetime" value="{{ forecast.datetime }}" name="forecast_datetime">
+    </div>
+    <div>
+      <label for="temperature">Forecasted temperature</label>
+      <input type="number" id="temperature" value="{{ forecast.forecasted_temperature }}"
+             name="forecasted_temperature">
+    </div>
+    <div>
+      <label for="humidity">Forecasted humidity</label>
+      <input type="number" id="humidity" value="{{ forecast.forecasted_humidity }}" name="forecasted_humidity">
+    </div>
+    <button id="submit">Submit</button>
+  </form>
+{% endblock %}

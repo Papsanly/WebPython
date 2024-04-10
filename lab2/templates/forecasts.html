@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>
+    Forecasts for city {{ city_name.capitalize() }}
+  </h2>
+  <h3>
+    {% if forecast_datetime_from %}
+      from {{ forecast_datetime_from }} <br>
+    {% endif %}
+    {% if forecast_datetime_to %}
+      to {{ forecast_datetime_to }}
+    {% endif %}
+  </h3>
+  <ul>
+    {% for forecast in forecasts %}
+      <li>
+        <p>Datetime: {{ forecast.datetime }}</p>
+        <p>Temperature: {{ forecast.forecasted_temperature }}</p>
+        <p>Humidity: {{ forecast.forecasted_humidity }}</p>
+        {% if user is not none %}
+          <button onclick="location.href = '{{ url_for("edit_forecast", forecast_id=forecast.id) }}'">Edit</button>
+          <button onclick="delete_forecast({{ forecast.id }})">Delete</button>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+  <script>
+    async function delete_forecast(id) {
+      await fetch(`/forecasts/${id}`, {method: 'delete'})
+      location.reload()
+    }
+  </script>
+{% endblock %}
