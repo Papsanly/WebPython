@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+  <form id="forecastForm" method="get" action="/forecasts">
+    <div>
+      <label for="city_name">City Name</label>
+      <select id="city_name" name="city_name" required>
+        {% for city in cities %}
+          <option value="{{ city.name }}">{{ city.name.capitalize() }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="datetime_from">
+        Datetime From:
+      </label>
+      <input id="datetime_from" type="datetime-local" name="forecast_datetime_from">
+    </div>
+    <div>
+      <label for="datetime_to">
+        Datetime To:
+      </label>
+      <input id="datetime_to" type="datetime-local" name="forecast_datetime_to">
+    </div>
+    <button type="submit">Search Forecast</button>
+  </form>
+{% endblock %}

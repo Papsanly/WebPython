@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import Annotated
 
+import pymongo
+from bson import ObjectId
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, HTTPException, Depends, status, Form
 from fastapi.exceptions import HTTPException as StarletteHTTPException
@@ -10,8 +12,6 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pymongo.database import Database
-import pymongo
-from bson import ObjectId
 
 from authorization import (
     authenticate_user,
@@ -21,7 +21,7 @@ from authorization import (
     get_superadmin,
     get_current_user,
 )
-from models import connect
+from models import connect, get_db
 
 
 async def startup_event():
@@ -31,7 +31,6 @@ async def startup_event():
         create_example_user(db)
     finally:
         pass
-
 
 
 app = FastAPI(
@@ -64,7 +63,7 @@ async def http_exception_handler(
 @app.get("/", tags=["Forecasts"], response_class=HTMLResponse)
 def index(
     request: Request,
-    db: Database,
+    db: Annotated[Database, Depends(get_db)],
     user=Depends(get_current_user),
 ):
     cities = list(db["cities"].find({}))
@@ -76,7 +75,7 @@ def index(
 @app.get("/create-forecast", tags=["Forecasts"], response_class=HTMLResponse)
 def create_forecast(
     request: Request,
-    db: Database,
+    db: Annotated[Database, Depends(get_db)],
     user=Depends(get_superadmin),
 ):
     cities = list(db["cities"].find({}))
@@ -90,7 +89,7 @@ def create_forecast(
 @app.get("/add-city", response_class=HTMLResponse)
 def add_city(
     request: Request,
-    db: Database,
+    db: Annotated[Database, Depends(get_db)],
     user=Depends(get_superadmin),
 ):
     countries = list(db["countries"].find({}))
@@ -112,20 +111,26 @@ def add_country(
         context={"user": user},
     )
 
-@app.get("/edit-forecast/{forecast_id}", tags=["Forecasts"], response_class=HTMLResponse)
+
+@app.get(
+    "/edit-forecast/{forecast_id}", tags=["Forecasts"], response_class=HTMLResponse
+)
 def edit_forecast(
     request: Request,
     forecast_id: str,
-    db: Database,
+    db: Annotated[Database, Depends(get_db)],
     user=Depends(get_superadmin),
 ):
-    forecast = db["forecasts"].find_one({"_id": ObjectId(forecast_id)})  # Знайти прогноз за його ідентифікатором
+    forecast = db["forecasts"].find_one(
+        {"_id": ObjectId(forecast_id)}
+    )  # Знайти прогноз за його ідентифікатором
     cities = list(db["cities"].find({}))  # Отримати всі міста
     return templates.TemplateResponse(
         name="edit_forecast.html",
         request=request,
         context={"user": user, "forecast": forecast, "cities": cities},
     )
+
 
 @app.post(
     "/forecasts",
@@ -135,11 +140,11 @@ def edit_forecast(
 )
 async def create_forecast(
     request: Request,
-    city_id: Annotated[int, Form()],
+    city_id: Annotated[str, Form()],
     forecast_datetime: Annotated[datetime, Form()],
     forecasted_temperature: Annotated[float, Form()],
     forecasted_humidity: Annotated[float, Form()],
-    db: Database,
+    db: Annotated[Database, Depends(get_db)],
     user=Depends(get_superadmin),
 ):
     city = db["cities"].find_one({"_id": ObjectId(city_id)})
@@ -151,7 +156,7 @@ async def create_forecast(
         "city_id": ObjectId(city_id),
         "datetime": forecast_datetime,
         "forecasted_temperature": forecasted_temperature,
-        "forecasted_humidity": forecasted_humidity
+        "forecasted_humidity": forecasted_humidity,
     }
     db["forecasts"].insert_one(forecast_data)
 
@@ -171,13 +176,10 @@ async def add_country(
     request: Request,
     country_name: Annotated[str, Form()],
     country_code: Annotated[str, Form()],
-    db: Database,
+    db: Annotated[Database, Depends(get_db)],
     user=Depends(get_superadmin),
 ):
-    country_data = {
-        "name": country_name.lower(),
-        "code": country_code.lower()
-    }
+    country_data = {"name": country_name.lower(), "code": country_code.lower()}
     db["forecasts"].insert_one(country_data)
 
     return templates.TemplateResponse(
@@ -194,9 +196,9 @@ async def add_country(
 )
 async def add_city(
     request: Request,
-    country_id: Annotated[int, Form()],
+    country_id: Annotated[str, Form()],
     city_name: Annotated[str, Form()],
-    db: Database,
+    db: Annotated[Database, Depends(get_db)],
     user=Depends(get_superadmin),
 ):
     country = db["countries"].find_one({"_id": ObjectId(country_id)})
@@ -222,29 +224,41 @@ async def add_city(
 def get_forecast(
     request: Request,
     city_name: str,
-    db: Database,
+    db: Annotated[Database, Depends(get_db)],
     user=Depends(get_current_user),
     forecast_datetime_from: datetime | None = None,
     forecast_datetime_to: datetime | None = None,
 ):
-    forecast_datetime_to_str = forecast_datetime_to
-    forecast_datetime_from_str = forecast_datetime_from
-    if not forecast_datetime_to:
-        forecast_datetime_to_str = "infinity"
-    if not forecast_datetime_from:
-        forecast_datetime_from_str = "-infinity"
-
-    city = db["cities"].find_one({"name": {"$regex": f"^{city_name}$", "$options": "i"}})
+    city = db["cities"].find_one(
+        {"name": {"$regex": f"^{city_name}$", "$options": "i"}}
+    )
     if not city:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="City not found"
         )
 
     # Отримання прогнозів за містом та датами
-    forecasts = db["forecasts"].find({
-        "city_id": city["_id"],
-        "datetime": {"$gte": forecast_datetime_from_str, "$lte": forecast_datetime_to_str}
-    }).sort("datetime", pymongo.ASCENDING)
+    forecasts = (
+        db["forecasts"]
+        .find(
+            {
+                "city_id": ObjectId(city["_id"]),
+                "datetime": {
+                    "$gte": (
+                        forecast_datetime_from
+                        if forecast_datetime_from is not None
+                        else datetime.min
+                    ),
+                    "$lte": (
+                        forecast_datetime_to
+                        if forecast_datetime_to is not None
+                        else datetime.max
+                    ),
+                },
+            }
+        )
+        .sort("datetime", pymongo.ASCENDING)
+    )
 
     forecasts = list(forecasts)
 
@@ -272,12 +286,12 @@ def get_forecast(
 )
 async def update_forecast(
     request: Request,
-    forecast_id: int,
-    city_id: Annotated[int, Form()],
+    forecast_id: str,
+    city_id: Annotated[str, Form()],
     forecast_datetime: Annotated[datetime, Form()],
     forecasted_temperature: Annotated[float, Form()],
     forecasted_humidity: Annotated[float, Form()],
-    db: Database,
+    db: Annotated[Database, Depends(get_db)],
     user=Depends(get_superadmin),
 ):
     if not db["forecasts"].find_one({"_id": ObjectId(forecast_id)}):
@@ -294,12 +308,14 @@ async def update_forecast(
     # Оновлення прогнозу
     update_result = db["forecasts"].update_one(
         {"_id": ObjectId(forecast_id)},
-        {"$set": {
-            "city_id": ObjectId(city_id),
-            "datetime": forecast_datetime,
-            "forecasted_temperature": forecasted_temperature,
-            "forecasted_humidity": forecasted_humidity
-        }}
+        {
+            "$set": {
+                "city_id": ObjectId(city_id),
+                "datetime": forecast_datetime,
+                "forecasted_temperature": forecasted_temperature,
+                "forecasted_humidity": forecasted_humidity,
+            }
+        },
     )
 
     # Перевірка, чи відбулося оновлення
@@ -318,11 +334,13 @@ async def update_forecast(
 @app.delete("/forecasts/{forecast_id}", tags=["Forecasts"])
 def delete_forecast(
     request: Request,
-    forecast_id: int,
-    db: Database,
+    forecast_id: str,
+    db: Annotated[Database, Depends(get_db)],
     user=Depends(get_superadmin),
 ):
-    deleted_forecast = db["forecasts"].find_one_and_delete({"_id": ObjectId(forecast_id)})
+    deleted_forecast = db["forecasts"].find_one_and_delete(
+        {"_id": ObjectId(forecast_id)}
+    )
 
     # Перевірка, чи був видалений документ
     if not deleted_forecast:
@@ -355,7 +373,7 @@ async def logout():
 @app.post("/token", tags=["Authorization"], response_class=RedirectResponse)
 async def get_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    db: Database,
+    db: Annotated[Database, Depends(get_db)],
 ):
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
@@ -364,7 +382,7 @@ async def get_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    token = create_access_token(data={"sub": user.username})
+    token = create_access_token(data={"sub": user["username"]})
     response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
     response.set_cookie(key="token", value=token.access_token)
     return response

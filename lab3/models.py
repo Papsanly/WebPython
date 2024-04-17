@@ -4,13 +4,23 @@ MONGO_DB_HOST = "localhost"
 MONGO_DB_PORT = "27017"
 MONGO_DB_NAME = "lab3"
 
+
 def connect():
-    client = MongoClient(f'mongodb://{MONGO_DB_HOST}:{MONGO_DB_PORT}/')
+    client = MongoClient(f"mongodb://{MONGO_DB_HOST}:{MONGO_DB_PORT}/")
     db = client[MONGO_DB_NAME]
     return db
 
+
+def get_db():
+    db = connect()
+    try:
+        yield db
+    finally:
+        db.client.close()
+
+
 class User:
-    def __init__(self, username, email, hashed_password, role='user'):
+    def __init__(self, username, email, hashed_password, role="user"):
         self.username = username
         self.email = email
         self.hashed_password = hashed_password

@@ -1,9 +1,8 @@
-from pymongo import MongoClient
-import os
 import sqlite3
-from models import User, Country, City, Forecast, connect
 
 from dotenv import load_dotenv
+
+from models import User, Country, City, Forecast, connect
 
 SQLITE_DB_PATH = "../lab1/sqlite.db"
 
@@ -24,10 +23,10 @@ if __name__ == "__main__":
     sqlite_cursor = sqlite_conn.cursor()
 
     db = connect()
-    users_collection = db['users']
-    countries_collection = db['countries']
-    cities_collection = db['cities']
-    forecasts_collection = db['forecasts']
+    users_collection = db["users"]
+    countries_collection = db["countries"]
+    cities_collection = db["cities"]
+    forecasts_collection = db["forecasts"]
 
     sqlite_cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = sqlite_cursor.fetchall()

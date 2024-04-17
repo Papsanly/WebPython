@@ -1,18 +1,16 @@
 import os
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Annotated
-from dataclasses import dataclass
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import APIKeyCookie
 from jose import JWTError, jwt, ExpiredSignatureError
 from passlib.context import CryptContext
-from sqlalchemy import select, insert
-from sqlalchemy.orm import Session
 from pymongo.database import Database
-import pymongo
 
-from models import User, Forecast, City, Country
+from models import get_db
+
 
 @dataclass
 class AccessToken:
@@ -44,11 +42,13 @@ def create_access_token(data: dict):
     encoded_jwt = jwt.encode(to_encode, os.getenv("SECRET_KEY"), algorithm=ALGORITHM)
     return AccessToken(access_token=encoded_jwt, token_type="bearer")
 
-def authenticate_user(db: Database, username: str, password: str) -> User | None:
+
+def authenticate_user(db: Database, username: str, password: str):
     user = db["users"].find_one({"username": username})
-    if user and verify_password(password, user['hashed_password']):
+    if user and verify_password(password, user["hashed_password"]):
         return user
     return None
+
 
 def create_superadmin(db: Database):
     email = os.getenv("SUPERADMIN_EMAIL")
@@ -59,9 +59,10 @@ def create_superadmin(db: Database):
             "username": "superadmin",
             "email": email,
             "hashed_password": get_password_hash(password),
-            "role": "admin"
+            "role": "admin",
         }
         db["users"].insert_one(user_data)
+
 
 def create_example_user(db: Database):
     email = "user@example.com"
@@ -72,14 +73,15 @@ def create_example_user(db: Database):
             "username": "user",
             "email": email,
             "hashed_password": get_password_hash(password),
-            "role": "user"
+            "role": "user",
         }
         db["users"].insert_one(user_data)
 
+
 def get_current_user(
-    db: Database,
+    db: Annotated[Database, Depends(get_db)],
     token: Annotated[str, Depends(api_key_scheme)],
-) -> User | None:
+):
     if token is None:
         return None
     credentials_exception = HTTPException(
@@ -102,8 +104,8 @@ def get_current_user(
         raise credentials_exception
 
 
-def get_superadmin(user: Annotated[User, Depends(get_current_user)]):
-    if user is None or user.role != "admin":
+def get_superadmin(user=Depends(get_current_user)):
+    if user is None or user["role"] != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user doesn't have enough privileges",

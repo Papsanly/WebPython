@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Weather Forecasts</title>
+  <link rel="stylesheet" href={{ url_for("static", path="/style.css") }}/>
+</head>
+<body>
+<a href={{ url_for("index") }}><h1>Weather Forecasts</h1></a>
+{% if show_login_btn|default(True) %}
+  {% if user is none %}
+    <p><a href={{ url_for("login") }}>Login</a></p>
+  {% else %}
+    <h2>Logged in as {{ user.username }}</h2>
+    <p><a href={{ url_for("logout") }}>Log out</a></p>
+  {% endif %}
+{% endif %}
+{% if user is not none and show_btns|default(True) %}
+  <p><a href={{ url_for("create_forecast") }}>Create forecast</a></p>
+  <p><a href={{ url_for("add_city") }}>Add city</a></p>
+  <p><a href={{ url_for("add_country") }}>Add country</a></p>
+{% endif %}
+{% block content %}{% endblock %}
+<script>
+  window.addEventListener('load', function () {
+    let forms = document.querySelectorAll('form');
+    for (let form of forms) {
+      form.addEventListener('formdata', function (event) {
+        let formData = event.formData;
+        for (let [name, value] of Array.from(formData.entries())) {
+          if (value === '') formData.delete(name);
+        }
+      });
+    }
+  });
+</script>
+</body>
+</html>

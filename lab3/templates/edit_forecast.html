@@ -2,7 +2,7 @@
 {% set show_create_forecast_btn = False %}
 {% block content %}
   <h2>Edit forecast</h2>
-  <form action="/forecasts/{{ forecast.id }}" method="post">
+  <form action="/forecasts/{{ forecast._id }}" method="post">
     <div>
       <label for="city_id">City Name</label>
       <select id="city_id" name="city_id" required>
