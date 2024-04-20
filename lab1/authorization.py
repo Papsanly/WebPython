@@ -9,7 +9,7 @@ from passlib.context import CryptContext
 from sqlalchemy import select, insert
 from sqlalchemy.orm import Session
 
-from lab1.schemas import AccessTokenSchema
+from schemas import AccessTokenSchema
 from models import User, get_db
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

@@ -20,6 +20,7 @@ from authorization import (
     create_superadmin,
     get_superadmin,
     get_current_user,
+    get_password_hash
 )
 from models import connect, get_db
 
@@ -387,6 +388,55 @@ async def get_token(
     response.set_cookie(key="token", value=token.access_token)
     return response
 
+
+
+@app.post("/register", response_class=HTMLResponse, status_code=status.HTTP_201_CREATED)
+async def register_user(
+    request: Request,
+    username: Annotated[str, Form()],
+    email: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    password_confirm: Annotated[str, Form()],
+    db: Annotated[Database, Depends(get_db)]
+):
+    existing_user = db["users"].find_one({"username": username})
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Such user already exists."
+        )
+    
+    existing_email =  db["users"].find_one({"email": email})
+    if existing_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with such e-mail already exists."
+        )
+    
+    if password != password_confirm:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Passwords do not match."
+        )
+    hashed_password = get_password_hash(password)
+    new_user = {
+        "username": username,
+        "email": email,
+        "hashed_password": hashed_password,
+        "role": "user",
+    }
+    db["users"].insert_one(new_user)
+    return templates.TemplateResponse(
+        name="message.html",
+        request=request,
+        context={
+            "user": None,
+            "message": "User registered successfully"},
+    )
+
+@app.get("/register", response_class=HTMLResponse, name="register")
+async def show_register_form(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request, "user": None})
 
 def custom_openapi():
     if app.openapi_schema:
