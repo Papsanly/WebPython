@@ -79,7 +79,7 @@ except Exception:
 
 def index(request):
     if request.method == "GET":
-        return render(request, "index.html", {"cities": CITIES})
+        return render(request, "index.html", {"cities": CITIES, "user": request.user})
 
 
 @csrf_exempt
@@ -96,7 +96,11 @@ def add_city(request):
         CITIES.append(city)
         return HttpResponseRedirect(reverse("index"))
     else:  # Handle 'GET' request
-        return render(request, "add_city.html", {"countries": COUNTRIES})
+        return render(
+            request,
+            "add_city.html",
+            {"countries": COUNTRIES, "user": request.user},
+        )
 
 
 @login_required
@@ -107,7 +111,9 @@ def edit_forecast(request, forecast_id):
             None,
         )
         return render(
-            request, "edit_forecast.html", {"forecast": forecast, "cities": CITIES}
+            request,
+            "edit_forecast.html",
+            {"forecast": forecast, "cities": CITIES, "user": request.user},
         )
 
 
@@ -144,7 +150,7 @@ def add_country(request):
         COUNTRIES.append(country)
         return HttpResponseRedirect(reverse("index"))
     else:
-        return render(request, "add_country.html")
+        return render(request, "add_country.html", {"user": request.user})
 
 
 @login_required
@@ -157,7 +163,9 @@ def get_forecast(request, city_name):
         forecasts = [
             forecast for forecast in FORECASTS if forecast["city_id"] == city["id"]
         ]  # .....
-        return render(request, "forecasts.html", {"forecasts": forecasts})
+        return render(
+            request, "forecasts.html", {"forecasts": forecasts, "user": request.user}
+        )
 
 
 @csrf_exempt
@@ -205,7 +213,7 @@ def register(request):
             return render(request, "register.html", {"form": form})
     else:
         form = UserCreationForm()
-        return render(request, "register.html", {"form": form})
+        return render(request, "register.html", {"form": form, "user": request.user})
 
 
 def login_view(request):
@@ -217,8 +225,16 @@ def login_view(request):
             login(request, user)
             return HttpResponseRedirect(reverse("index"))
         else:
-            return render(request, "login.html", {"message": "Invalid credentials."})
-    return render(request, "login.html")
+            return render(
+                request,
+                "login.html",
+                {"message": "Invalid credentials.", "user": request.user},
+            )
+    return render(
+        request,
+        "login.html",
+        {"user": request.user},
+    )
 
 
 def logout_view(request):
