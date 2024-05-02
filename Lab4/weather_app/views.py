@@ -1,5 +1,9 @@
+from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
+from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 
@@ -59,8 +63,6 @@ FORECASTS = [
     },
 ]
 
-from django.contrib.auth.models import User
-
 
 def create_user():
     user = User.objects.create_user("user1", "myemail@example.com", "password1")
@@ -86,8 +88,8 @@ def add_city(request):
         country = next(
             (country for country in COUNTRIES if country["id"] == int(country_id)), None
         )
-        id = len(CITIES) + 1
-        city = {"id": id, "name": city_name, "country_id": country["id"]}
+        city_id = len(CITIES) + 1
+        city = {"id": city_id, "name": city_name, "country_id": country["id"]}
         CITIES.append(city)
         return HttpResponseRedirect(reverse("index"))
     else:  # Handle 'GET' request
@@ -116,9 +118,9 @@ def create_forecast(request):
         forecasted_temperature = request.POST["forecasted_temperature"]
         forecasted_humidity = request.POST["forecasted_humidity"]
         city = next((city for city in CITIES if city["id"] == int(city_id)), None)
-        id = len(FORECASTS) + 1
+        city_id = len(FORECASTS) + 1
         forecast = {
-            "id": id,
+            "id": city_id,
             "city_id": city["id"],
             "datetime": forecast_datetime,
             "forecasted_temperature": forecasted_temperature,
@@ -134,8 +136,8 @@ def add_country(request):
     if request.method == "POST":
         country_name = request.POST["country_name"]
         country_code = request.POST["country_code"]
-        id = len(COUNTRIES) + 1
-        country = {"id": id, "name": country_name, "code": country_code}
+        city_id = len(COUNTRIES) + 1
+        country = {"id": city_id, "name": country_name, "code": country_code}
         COUNTRIES.append(country)
         return HttpResponseRedirect(reverse("index"))
     else:
@@ -184,11 +186,6 @@ def delete_forecast(request, forecast_id):
         )
         FORECASTS.remove(forecast)
         return HttpResponseRedirect(reverse("index"))
-
-
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth import logout, login, authenticate
-from django.shortcuts import render, redirect
 
 
 def register(request):

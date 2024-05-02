@@ -3,4 +3,4 @@
 **/.env
 **/*.http
 **/*__pycache__
-**/*.db
+**/*.sqlite3
