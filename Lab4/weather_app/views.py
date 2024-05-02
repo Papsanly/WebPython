@@ -7,6 +7,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from dotenv import load_dotenv
+from datetime import datetime
 import os
 
 COUNTRIES = [
@@ -100,7 +101,7 @@ def access_denied_view(request):
     context = {
         'message': 'You do not have sufficient privileges to access this page.'
     }
-    return HttpResponseForbidden(render(request, 'access_denied.html', context))
+    return HttpResponseForbidden(render(request, 'message.html', context))
 
 
 @csrf_exempt

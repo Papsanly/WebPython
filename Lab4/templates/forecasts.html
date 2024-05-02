@@ -18,7 +18,7 @@
         <p>Datetime: {{ forecast.datetime }}</p>
         <p>Temperature: {{ forecast.forecasted_temperature }}</p>
         <p>Humidity: {{ forecast.forecasted_humidity }}</p>
-        {% if user is not none %}
+        {% if user is not none and user.is_staff%}
           <button onclick="location.href = '{% url 'edit_forecast' forecast_id=forecast.id %}'">Edit</button>
           <form action="{% url 'delete_forecast' forecast_id=forecast.id %}" method="POST" id="deleteForm{{ forecast.id }}">
             {% csrf_token %}
