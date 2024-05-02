@@ -7,10 +7,10 @@
       <label for="city_id">City Name</label>
       <select id="city_id" name="city_id" required>
         {% for city in cities %}
-          {% if city._id == forecast.city_id %}
-            <option selected value="{{ city._id }}">{{ city.name.capitalize() }}</option>
+          {% if city.id == forecast.city_id %}
+            <option selected value="{{ city.id }}">{{ city.name.capitalize() }}</option>
           {% else %}
-            <option value="{{ city._id }}">{{ city.name.capitalize() }}</option>
+            <option value="{{ city.id }}">{{ city.name.capitalize() }}</option>
           {% endif %}
         {% endfor %}
       </select>
