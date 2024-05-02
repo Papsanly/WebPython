@@ -69,10 +69,7 @@ def create_user():
     user.save()
 
 
-try:
-    create_user()
-except:
-    pass
+create_user()
 
 
 def index(request):
