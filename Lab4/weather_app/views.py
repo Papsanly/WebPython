@@ -1,11 +1,13 @@
 from django.contrib.auth import logout, login, authenticate
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
+from dotenv import load_dotenv
+import os
 
 COUNTRIES = [
     {"id": 1, "name": "Ukraine", "code": "UA"},
@@ -70,8 +72,18 @@ def create_user():
     user.last_name = "Doe"
     user.save()
 
+def create_superadmin():
+    load_dotenv()
+    EMAIL = os.getenv("SUPERADMIN_EMAIL")
+    PASSWORD = os.getenv("SUPERADMIN_PASSWORD")
+    user = User.objects.create_user("superadmin", EMAIL, PASSWORD)
+    user.is_superuser = True
+    user.is_staff = True
+    user.save()
+
 
 try:
+    create_superadmin()
     create_user()
 except Exception:
     pass
@@ -80,10 +92,20 @@ except Exception:
 def index(request):
     if request.method == "GET":
         return render(request, "index.html", {"cities": CITIES, "user": request.user})
+    
+def is_staff_user(user):
+    return user.is_authenticated and user.is_staff
+
+def access_denied_view(request):
+    context = {
+        'message': 'You do not have sufficient privileges to access this page.'
+    }
+    return HttpResponseForbidden(render(request, 'access_denied.html', context))
 
 
 @csrf_exempt
 @login_required
+@user_passes_test(is_staff_user, login_url='/access_denied/')
 def add_city(request):
     if request.method == "POST":
         country_id = request.POST["country_id"]
@@ -104,6 +126,7 @@ def add_city(request):
 
 
 @login_required
+@user_passes_test(is_staff_user, login_url='/access_denied/')
 def edit_forecast(request, forecast_id):
     if request.method == "GET":
         forecast = next(
@@ -118,6 +141,7 @@ def edit_forecast(request, forecast_id):
 
 
 @login_required
+@user_passes_test(is_staff_user, login_url='/access_denied/')
 def create_forecast(request):
     if request.method == "GET":
         return render(request, "create_forecast.html", {"cities": CITIES})
@@ -141,6 +165,7 @@ def create_forecast(request):
 
 @csrf_exempt
 @login_required
+@user_passes_test(is_staff_user, login_url='/access_denied/')
 def add_country(request):
     if request.method == "POST":
         country_name = request.POST["country_name"]
@@ -170,6 +195,7 @@ def get_forecast(request, city_name):
 
 @csrf_exempt
 @login_required
+@user_passes_test(is_staff_user, login_url='/access_denied/')
 def update_forecast(request, forecast_id):
     if request.method == "POST":
         city_id = request.POST["city_id"]
@@ -189,6 +215,7 @@ def update_forecast(request, forecast_id):
 
 
 @login_required
+@user_passes_test(is_staff_user, login_url='/access_denied/')
 def delete_forecast(request, forecast_id):
     if request.method == "POST":
         forecast = next(

@@ -17,7 +17,7 @@
     <p><a href="{% url 'logout' %}">Log out</a></p>
   {% endif %}
 {% endif %}
-{% if user is not none and show_btns|default:"True" %}
+{% if user is not none and show_btns|default:"True" and user.is_staff%}
   <p><a href="{% url 'create_forecast' %}">Create forecast</a></p>
   <p><a href="{% url 'add_city' %}">Add city</a></p>
   <p><a href="{% url 'add_country' %}">Add country</a></p>
