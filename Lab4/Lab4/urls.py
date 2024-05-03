@@ -22,4 +22,5 @@ urlpatterns = [
     path("accounts/logout/", views.logout_view, name="logout"),
     path("register/", views.register, name="register"),
     path('access_denied/', views.access_denied_view, name='access_denied'),
+    path('error/<str:code>/<str:detail>/', views.error_view, name='error_view'),
 ]

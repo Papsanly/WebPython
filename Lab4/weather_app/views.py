@@ -2,7 +2,7 @@ from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from django.http import HttpResponseRedirect, HttpResponseForbidden
+from django.http import HttpResponseRedirect, HttpResponseForbidden, HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
@@ -25,42 +25,42 @@ FORECASTS = [
     {
         "id": 1,
         "city_id": 1,
-        "datetime": "2021-10-10 12:00:00",
+        "datetime": "2021-10-10",
         "forecasted_temperature": "20",
         "forecasted_humidity": "50",
     },
     {
         "id": 2,
         "city_id": 1,
-        "datetime": "2021-10-11 12:00:00",
+        "datetime": "2021-10-11",
         "forecasted_temperature": "21",
         "forecasted_humidity": "51",
     },
     {
         "id": 3,
         "city_id": 2,
-        "datetime": "2021-10-10 12:00:00",
+        "datetime": "2021-10-10",
         "forecasted_temperature": "22",
         "forecasted_humidity": "52",
     },
     {
         "id": 4,
         "city_id": 2,
-        "datetime": "2021-10-11 12:00:00",
+        "datetime": "2021-10-11",
         "forecasted_temperature": "23",
         "forecasted_humidity": "53",
     },
     {
         "id": 5,
         "city_id": 3,
-        "datetime": "2021-10-10 12:00:00",
+        "datetime": "2021-10-10",
         "forecasted_temperature": "24",
         "forecasted_humidity": "54",
     },
     {
         "id": 6,
         "city_id": 3,
-        "datetime": "2021-10-11 12:00:00",
+        "datetime": "2021-10-11",
         "forecasted_temperature": "25",
         "forecasted_humidity": "55",
     },
@@ -98,10 +98,15 @@ def is_staff_user(user):
     return user.is_authenticated and user.is_staff
 
 def access_denied_view(request):
+    return error_view(request, '403', 'You do not have sufficient privileges to access this page.')
+
+def error_view(request, code, detail):
+
     context = {
-        'message': 'You do not have sufficient privileges to access this page.'
+        'code': code,
+        'detail': detail
     }
-    return HttpResponseForbidden(render(request, 'message.html', context))
+    return render(request, 'error.html', context)
 
 
 @csrf_exempt
@@ -183,15 +188,29 @@ def add_country(request):
 def get_forecast(request, city_name):
     if request.method == "GET":
         city = next((city for city in CITIES if city["name"] == city_name), None)
+        if not city:
+            return redirect('error_view', code="404", detail="City not found")
+        
+        datetime_from = request.GET.get('forecast_datetime_from')
+        datetime_to = request.GET.get('forecast_datetime_to')
 
-        # тут щось з часом треба вирішити, нема на нього перевірки
+        try:
+            if datetime_from:
+                datetime_from = datetime.strptime(datetime_from, "%Y-%m-%d").date()
+            if datetime_to:
+                datetime_to = datetime.strptime(datetime_to, "%Y-%m-%d").date()
+
+            if datetime_from and datetime_to and datetime_from >= datetime_to:
+                return redirect('error_view', code="400", detail="Datetime From must be before Datetime To.")
+        except ValueError as e:
+            return redirect('error_view', code="400", detail="Invalid datetime format")
 
         forecasts = [
-            forecast for forecast in FORECASTS if forecast["city_id"] == city["id"]
-        ]  # .....
-        return render(
-            request, "forecasts.html", {"forecasts": forecasts, "user": request.user}
-        )
+            forecast for forecast in FORECASTS if forecast["city_id"] == city["id"] and
+            (not datetime_from or datetime.strptime(forecast["datetime"], "%Y-%m-%d").date() >= datetime_from) and
+            (not datetime_to or datetime.strptime(forecast["datetime"], "%Y-%m-%d").date() <= datetime_to)
+        ]
+        return render(request, "forecasts.html", {"forecasts": forecasts, "cities": CITIES, "user": request.user})
 
 
 @csrf_exempt
