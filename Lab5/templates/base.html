@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Weather Forecasts</title>
+  <link rel="stylesheet" href="{% static 'style.css' %}"/>
+</head>
+<body>
+<a href="{% url 'index' %}"><h1>Weather Forecasts</h1></a>
+{% if show_login_btn|default:True %}
+  {% if user.is_anonymous %}
+    <p><a href="{% url 'register' %}">Register</a></p>
+    <p><a href="{% url 'login' %}">Login</a></p>
+  {% else %}
+    <h2>Logged in as {{ user.username }}</h2>
+    <p><a href="{% url 'logout' %}">Log out</a></p>
+  {% endif %}
+{% endif %}
+{% if user is not none and show_btns|default:"True" and user.is_staff%}
+  <p><a href="{% url 'create_forecast' %}">Create forecast</a></p>
+  <p><a href="{% url 'add_city' %}">Add city</a></p>
+  <p><a href="{% url 'add_country' %}">Add country</a></p>
+{% endif %}
+{% block content %}{% endblock %}
+<script>
+  window.addEventListener('load', function () {
+    let forms = document.querySelectorAll('form');
+    for (let form of forms) {
+      form.addEventListener('formdata', function (event) {
+        let formData = event.formData;
+        for (let [name, value] of Array.from(formData.entries())) {
+          if (value === '') formData.delete(name);
+        }
+      });
+    }
+  });
+</script>
+</body>
+</html>

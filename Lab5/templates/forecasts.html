@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+  <h2>
+    Forecasts for city {{ city_name|capfirst }}
+  </h2>
+  <h3>
+    {% if forecast_datetime_from %}
+      from {{ forecast_datetime_from }} <br>
+    {% endif %}
+    {% if forecast_datetime_to %}
+      to {{ forecast_datetime_to }}
+    {% endif %}
+  </h3>
+  <ul>
+    {% for forecast in forecasts %}
+      <li>
+        <p>Datetime: {{ forecast.datetime }}</p>
+        <p>Temperature: {{ forecast.forecasted_temperature }}</p>
+        <p>Humidity: {{ forecast.forecasted_humidity }}</p>
+        {% if user is not none and user.is_staff%}
+          <button onclick="location.href = '{% url 'edit_forecast' forecast_id=forecast.id %}'">Edit</button>
+          <form action="{% url 'delete_forecast' forecast_id=forecast.id %}" method="POST" id="deleteForm{{ forecast.id }}">
+            {% csrf_token %}
+            <button type="submit">Delete</button>
+          </form>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+  <script src="{% static 'js/delete_forecast.js' %}"></script>
+{% endblock %}

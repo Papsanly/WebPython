@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+  <form id="forecastForm" method="get" action="/forecasts" onsubmit="submitForm(event)">
+    <div>
+      <label for="city_name">City Name</label>
+      <select id="city_name" name="city_name" required>
+        {% for city in cities %}
+          <option value="{{ city.name }}">{{ city.name.capitalize }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="datetime_from">
+        Datetime From:
+      </label>
+      <input id="datetime_from" type="date" name="forecast_datetime_from">
+    </div>
+    <div>
+      <label for="datetime_to">
+        Datetime To:
+      </label>
+      <input id="datetime_to" type="date" name="forecast_datetime_to">
+    </div>
+    <button type="submit">Search Forecast</button>
+  </form>
+    <script>
+    function submitForm(event) {
+      event.preventDefault();
+      const form = event.target;
+      const city_name = form.city_name.value;
+      form.action = `/forecasts/${city_name}`;
+      form.submit();
+    }
+  </script>
+{% endblock %}
