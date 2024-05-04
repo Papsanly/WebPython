@@ -11,8 +11,8 @@ urlpatterns = [
     path("forecasts/", views.create_forecast, name="create_forecast"),
     path("countries/", views.add_country, name="add_country"),
     path("cities/", views.add_city, name="add_city"),
-    path("forecasts/<str:city_name>/", views.get_forecast, name="get_forecast"),
-    path("forecasts/<int:forecast_id>/", views.update_forecast, name="update_forecast"),
+    path("forecasts/city/<str:city_name>/", views.get_forecast, name="get_forecast"),
+    path("forecasts/id/<int:forecast_id>/", views.update_forecast, name="update_forecast"),
     path(
         "forecasts/<int:forecast_id>/delete/",
         views.delete_forecast,

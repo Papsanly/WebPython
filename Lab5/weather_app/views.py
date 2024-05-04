@@ -199,19 +199,24 @@ def delete_forecast(request, forecast_id):
 
 def register(request):
     if request.method == "POST":
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            username = form.cleaned_data.get("username")
-            password = form.cleaned_data.get("password1")
-            user = authenticate(username=username, password=password)
+        username = request.POST.get("username")
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+        password_confirm = request.POST.get("password_confirm")
+
+        if not username or not email or not password or not password_confirm:
+            return HttpResponse("All fields are required.", status=400)
+        if password != password_confirm:
+            return HttpResponse("Passwords do not match.", status=400)
+        
+        try:
+            user = User.objects.create_user(username, email, password)
             login(request, user)
             return redirect("index")
-        else:
-            return render(request, "register.html", {"form": form})
+        except Exception as e:
+            return error_view(request, '400', str(e))
     else:
-        form = UserCreationForm()
-        return render(request, "register.html", {"form": form, "user": request.user})
+        return render(request, "register.html")
 
 
 def login_view(request):
