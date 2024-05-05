@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+  <h2>
+    List of users
+  </h2>
+  <ul>
+    {% for the_user in users %}
+      <li>
+        <p>Username: {{ the_user.username }}</p>
+        <p>E-mail: {{ the_user.email }}</p>
+        <p>Is admin: {{ the_user.is_staff }}</p>
+        {% if user is not none and user.is_staff%}
+          <button onclick="location.href = '{% url 'edit_user' user_id=the_user.id %}'">Edit</button>
+          <form action="{% url 'delete_user' user_id=the_user.id %}" method="POST">
+            {% csrf_token %}
+            <button type="submit">Delete</button>
+          </form>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+  <!-- <script src="{% static 'js/delete_forecast.js' %}"></script> -->
+{% endblock %}

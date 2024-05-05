@@ -23,4 +23,7 @@ urlpatterns = [
     path("register/", views.register, name="register"),
     path('access_denied/', views.access_denied_view, name='access_denied'),
     path('error/<str:code>/<str:detail>/', views.error_view, name='error_view'),
+    path('users/', views.users_view, name="users"),
+    path('users/delete_user/<int:user_id>/', views.delete_user, name="delete_user"),
+    path('users/edit_user/<int:user_id>/', views.edit_user, name="edit_user"),
 ]

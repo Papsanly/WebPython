@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect, HttpResponseForbidden, HttpResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from dotenv import load_dotenv
@@ -205,9 +205,13 @@ def register(request):
         password_confirm = request.POST.get("password_confirm")
 
         if not username or not email or not password or not password_confirm:
-            return HttpResponse("All fields are required.", status=400)
+            return error_view(request, '400', "All fields are required.")
         if password != password_confirm:
-            return HttpResponse("Passwords do not match.", status=400)
+            return error_view(request, '400', "Passwords do not match.")
+        if User.objects.filter(username=username).exists():
+            return error_view(request, '400', "Such user already exists.")
+        if User.objects.filter(email=email).exists():
+            return error_view(request, '400', "A user with this email already exists.")
         
         try:
             user = User.objects.create_user(username, email, password)
@@ -238,6 +242,59 @@ def login_view(request):
         "login.html",
         {"user": request.user},
     )
+
+@login_required
+@user_passes_test(is_staff_user, login_url='/access_denied/')
+def users_view(request):
+    if request.method == "GET":
+        users = User.objects.all()
+        return render(request, "users.html", {"users": users, "user": request.user})
+    
+@login_required
+@user_passes_test(is_staff_user, login_url='/access_denied/')
+def delete_user(request, user_id):
+    if request.method == "POST":
+        if user_id == request.user.id:
+            return error_view(request, '403', "User cannot delete himself!")
+        user = get_object_or_404(User, pk=user_id)
+        user.delete()
+        return redirect('users') 
+    else:
+        return error_view(request, '403', "Invalid request method.")
+    
+@login_required
+@user_passes_test(is_staff_user, login_url='/access_denied/')
+def edit_user(request, user_id):
+    if request.method == "GET":
+        if user_id == request.user.id:
+            return error_view(request, '403', "User cannot edit himself!")
+        user = User.objects.get(id=user_id)
+        return render(
+            request,
+            "edit_user.html",
+            {"user": user},
+        )
+    elif request.method == "POST":
+        if user_id == request.user.id:
+            return error_view(request, '403', "User cannot edit himself!")
+        username = request.POST["username"]
+        email = request.POST["email"]
+        is_staff = request.POST.get("is_staff") == 'on'
+        if not username or not email:
+            return error_view(request, '400', "All fields are required.")
+        if User.objects.filter(username=username).exists():
+            return error_view(request, '400', "A user with this username already exists")
+        if User.objects.filter(email=email).exists():
+            return error_view(request, '400', "A user with this email already exists.")
+        user = User.objects.get(id=user_id)
+        user.username = username
+        user.email = email
+        user.is_staff = is_staff
+        user.save()
+        return redirect('users')
+        
+    else:
+        return error_view(request, '403', "Invalid request method.")
 
 
 def logout_view(request):
