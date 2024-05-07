@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Edit {{ city.id }}</h2>
+  <form action="{% url 'edit_city' city.id %}" method="post">
+    {% csrf_token %}
+    <div>
+      <label for="name">Name</label>
+      <input id="name" value="{{ city.name }}" name="name">
+    </div>
+    <div>
+      <label for="country_id">Country Name</label>
+      <select id="country_id" name="country_id" required>
+        {% for country in countries %}
+          {% if country.id == city.country_id.id %}
+            <option selected value="{{ country.id }}">{{ country.name.capitalize }}</option>
+          {% else %}
+            <option value="{{ country.id }}">{{ country.name.capitalize }}</option>
+          {% endif %}
+        {% endfor %}
+      </select>
+    </div>
+    <button id="submit">Submit</button>
+  </form>
+{% endblock %}

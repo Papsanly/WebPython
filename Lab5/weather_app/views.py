@@ -344,3 +344,47 @@ def edit_country(request, country_id):
         return redirect('countries')
     else:
         return error_view(request, '403', "Invalid request method.")
+
+@login_required
+def cities(request):
+    if request.method == "GET":
+        cities = City.objects.all().select_related('country_id').values('id', 'name', 'country_id__name')
+        return render(request, "cities.html", {"cities": cities})
+    else:
+        return error_view(request, '403', "Invalid request method.")
+
+
+@login_required
+@user_passes_test(is_staff_user, login_url='/access_denied/')
+def delete_city(request, city_id):
+    if request.method == "POST":
+        city = get_object_or_404(City, pk=city_id)
+        city.delete()
+        return redirect('cities')
+    else:
+        return error_view(request, '403', "Invalid request method.")
+
+
+@login_required
+@user_passes_test(is_staff_user, login_url='/access_denied/')
+def edit_city(request, city_id):
+    if request.method == "GET":
+        city = City.objects.get(id=city_id)
+        countries = Country.objects.all()
+        return render(
+            request,
+            "edit_city.html",
+            {"city": city, "countries": countries},
+        )
+    elif request.method == "POST":
+        name = request.POST["name"]
+        country_id = request.POST["country_id"]
+        if not name or not country_id:
+            return error_view(request, '400', "All fields are required.")
+        city = City.objects.get(id=city_id)
+        city.name = name
+        city.country_id = Country.objects.get(pk=country_id)
+        city.save()
+        return redirect('cities')
+    else:
+        return error_view(request, '403', "Invalid request method.")

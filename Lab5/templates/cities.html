@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+  <h2>
+    List of Cities
+  </h2>
+  <ul>
+    {% for city in cities %}
+      <li>
+        <p>Name: {{ city.name.capitalize }}</p>
+        <p>Country: {{ city.country_id__name.capitalize }}</p>
+        {% if user is not none and user.is_staff%}
+          <button onclick="location.href = '{% url 'edit_city' city_id=city.id %}'">Edit</button>
+          <form action="{% url 'delete_city' city_id=city.id %}" method="POST">
+            {% csrf_token %}
+            <button type="submit">Delete</button>
+          </form>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock %}

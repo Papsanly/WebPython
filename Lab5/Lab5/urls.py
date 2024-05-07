@@ -39,4 +39,15 @@ urlpatterns = [
         views.edit_country,
         name="edit_country",
     ),
+    path("cities/", views.cities, name="cities"),
+    path(
+        "cities/delete_city/<int:city_id>/",
+        views.delete_city,
+        name="delete_city",
+    ),
+    path(
+        "cities/edit_city/<int:city_id>/",
+        views.edit_city,
+        name="edit_city",
+    ),
 ]
