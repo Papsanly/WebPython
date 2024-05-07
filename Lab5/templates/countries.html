@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+  <h2>
+    List of Countries
+  </h2>
+  <ul>
+    {% for country in countries %}
+      <li>
+        <p>Name: {{ country.name }}</p>
+        <p>Code: {{ country.code }}</p>
+        {% if user is not none and user.is_staff%}
+          <button onclick="location.href = '{% url 'edit_country' country_id=country.id %}'">Edit</button>
+          <form action="{% url 'delete_country' country_id=country.id %}" method="POST">
+            {% csrf_token %}
+            <button type="submit">Delete</button>
+          </form>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock %}

@@ -16,7 +16,7 @@
     </div>
     <div>
       <label for="datetime">Datetime</label>
-      <input type="date" id="datetime" value="{{ forecast.datetime }}" name="forecast_datetime">
+      <input type="date" id="datetime" value="{{ forecast.datetime|date:"c" }}" name="forecast_datetime">
     </div>
     <div>
       <label for="temperature">Forecasted temperature</label>

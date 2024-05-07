@@ -300,3 +300,47 @@ def edit_user(request, user_id):
 def logout_view(request):
     logout(request)
     return redirect("login")
+
+
+@login_required
+def countries(request):
+    if request.method == "GET":
+        countries = Country.objects.all()
+        return render(request, "countries.html", {"countries": countries})
+    else:
+        return error_view(request, '403', "Invalid request method.")
+
+
+@login_required
+@user_passes_test(is_staff_user, login_url='/access_denied/')
+def delete_country(request, country_id):
+    if request.method == "POST":
+        country = get_object_or_404(Country, pk=country_id)
+        country.delete()
+        return redirect('countries')
+    else:
+        return error_view(request, '403', "Invalid request method.")
+
+
+@login_required
+@user_passes_test(is_staff_user, login_url='/access_denied/')
+def edit_country(request, country_id):
+    if request.method == "GET":
+        country = Country.objects.get(id=country_id)
+        return render(
+            request,
+            "edit_country.html",
+            {"country": country},
+        )
+    elif request.method == "POST":
+        name = request.POST["name"]
+        code = request.POST["code"]
+        if not name or not code:
+            return error_view(request, '400', "All fields are required.")
+        country = Country.objects.get(id=country_id)
+        country.name = name
+        country.code = code
+        country.save()
+        return redirect('countries')
+    else:
+        return error_view(request, '403', "Invalid request method.")

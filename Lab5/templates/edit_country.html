@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Edit {{ country.id }}</h2>
+  <form action="{% url 'edit_country' country.id %}" method="post">
+    {% csrf_token %}
+    <div>
+      <label for="name">Name</label>
+      <input id="name" value="{{ country.name }}" name="name">
+    </div>
+    <div>
+      <label for="code">E-mail</label>
+      <input value="{{ country.code }}" id="code" name="code">
+    </div>
+    <button id="submit">Submit</button>
+  </form>
+{% endblock %}
