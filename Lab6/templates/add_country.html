@@ -2,14 +2,14 @@
 {% block content %}
   <h2>Add country</h2>
   <form method="post" action="/add-country">
-    {{ form.csrf_token }}
+    {{ form.hidden_tag() }}
     <div>
       <label for="country_name">Country name</label>
-      <input id="country_name" name="country_name" required>
+      {{ form.name(id="name") }}
     </div>
     <div>
       <label for="country_code">Country code</label>
-      <input id="country_code" name="country_code" required>
+      {{ form.code(id="code") }}
     </div>
     <button type="submit">Submit</button>
   </form>

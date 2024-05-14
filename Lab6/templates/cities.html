@@ -7,7 +7,7 @@
     {% for city in cities %}
       <li>
         <p>Name: {{ city.name.capitalize() }}</p>
-        <p>Country: {{ city.country_id__name.capitalize() }}</p>
+        <p>Country: {{ city.country.name.capitalize() }}</p>
         {% if current_user is not none and current_user.is_staff %}
           <button onclick="location.href = '{{ url_for('edit_city', city_id=city.id) }}'">Edit</button>
           <form action="{{ url_for('delete_city', city_id=city.id) }}" method="POST">

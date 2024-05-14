@@ -1,16 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
-  <h2>Edit {{ country.id }}</h2>
+  <h2>Edit country: {{ country.name }}</h2>
   <form action="{{ url_for('edit_country', country_id=country.id) }}" method="post">
-    {{ form.csrf_token }}
+    {{ form.hidden_tag() }}
     <div>
       <label for="name">Name</label>
-      <input id="name" value="{{ country.name }}" name="name">
+      {{ form.name(id="name") }}
+      
     </div>
     <div>
       <label for="code">Code</label>
-      <input value="{{ country.code }}" id="code" name="code">
+      {{ form.code(id="code") }}
     </div>
-    <button id="submit">Submit</button>
+    <button type="submit" id="submit">Submit</button>
   </form>
 {% endblock %}

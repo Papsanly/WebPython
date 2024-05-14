@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import validates
+from sqlalchemy.orm import validates, relationship
 from flask_login import UserMixin
 
 db = SQLAlchemy()
@@ -22,6 +22,7 @@ class City(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     country_id = db.Column(db.Integer, db.ForeignKey('country.id'), nullable=False)
+    country = relationship('Country', backref='cities')
 
     @validates('name')
     def validate_name(self, key, value):
@@ -36,6 +37,7 @@ class Forecast(db.Model):
     datetime = db.Column(db.Date, nullable=False)
     forecasted_temperature = db.Column(db.Integer, nullable=False)
     forecasted_humidity = db.Column(db.Integer, nullable=False)
+    city = relationship('City', backref='forecasts')
 
     @validates('forecasted_humidity')
     def validate_forecasted_humidity(self, key, forecasted_humidity):

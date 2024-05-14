@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, IntegerField, FloatField, DateField
+from wtforms import StringField, PasswordField, SubmitField, IntegerField, FloatField, DateField, BooleanField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
 
 
@@ -19,13 +19,13 @@ class LoginForm(FlaskForm):
 
 class CityForm(FlaskForm):
     country_id = IntegerField('Country ID', validators=[DataRequired()])
-    city_name = StringField('City Name', validators=[DataRequired()])
+    name = StringField('City Name', validators=[DataRequired()])
     submit = SubmitField('Submit')
 
 
 class CountryForm(FlaskForm):
-    country_name = StringField('Country Name', validators=[DataRequired()])
-    country_code = StringField('Country Code', validators=[DataRequired()])
+    name = StringField('Country Name', validators=[DataRequired()])
+    code = StringField('Country Code', validators=[DataRequired()])
     submit = SubmitField('Submit')
 
 
@@ -35,3 +35,12 @@ class ForecastForm(FlaskForm):
     forecasted_temperature = FloatField('Forecasted Temperature', validators=[DataRequired()])
     forecasted_humidity = FloatField('Forecasted Humidity', validators=[DataRequired()])
     submit = SubmitField('Submit')
+
+class EditUserForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    is_staff = BooleanField('Is admin')
+    submit = SubmitField('Submit')
+
+class CSRFProtectForm(FlaskForm):
+    pass

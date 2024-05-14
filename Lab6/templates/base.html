@@ -7,23 +7,23 @@
 </head>
 <body>
 <a href="{{ url_for('index') }}"><h1>Weather Forecasts</h1></a>
-{% if show_login_btn|default(True) %}
-{% endif %}
-  {% if current_user.is_anonymous %}
-    <p><a href="{{ url_for('register') }}">Register</a></p>
-    <p><a href="{{ url_for('login_view') }}">Login</a></p>
-  {% else %}
+{% if current_user.is_anonymous %}
+  <p><a href="{{ url_for('register') }}">Register</a></p>
+  <p><a href="{{ url_for('login_view') }}">Login</a></p>
+{% else %}
+  <h2>Logged in as {{ current_user.username }}</h2>
+  <p><a href="{{ url_for('logout_view') }}">Log out</a></p>
+
+  {% if current_user.is_staff %}
+    <p><a href="{{ url_for('create_forecast') }}">Create forecast</a></p>
+    <p><a href="{{ url_for('add_city') }}">Add city</a></p>
+    <p><a href="{{ url_for('add_country') }}">Add country</a></p>
+    <p><a href="{{ url_for('users_view') }}">Users</a></p>
+    <p><a href="{{ url_for('countries') }}">Countries</a></p>
+    <p><a href="{{ url_for('cities') }}">Cities</a></p>
   {% endif %}
-    <h2>Logged in as {{ current_user.username }}</h2>
-    <p><a href="{{ url_for('logout_view') }}">Log out</a></p>
-{% if current_user is not none and show_btns|default("True") and current_user.is_staff %}
-  <p><a href="{{ url_for('create_forecast') }}">Create forecast</a></p>
-  <p><a href="{{ url_for('add_city') }}">Add city</a></p>
-  <p><a href="{{ url_for('add_country') }}">Add country</a></p>
-  <p><a href="{{ url_for('users_view') }}">Users</a></p>
-  <p><a href="{{ url_for('countries') }}">Countries</a></p>
-  <p><a href="{{ url_for('cities') }}">Cities</a></p>
 {% endif %}
+
 {% block content %}{% endblock %}
 <script>
   window.addEventListener('load', function () {

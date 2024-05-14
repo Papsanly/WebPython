@@ -5,15 +5,15 @@
     {{ form.csrf_token }}
     <div>
       <label for="username">Username</label>
-      <input id="username" value="{{ user.username }}" name="username">
+      {{ form.username(id="username") }}
     </div>
     <div>
       <label for="email">E-mail</label>
-      <input type="email" value="{{ user.email }}" id="email" name="email">
+      {{ form.email(id="email") }}
     </div>
     <div>
       <label for="is_staff">Is Admin</label>
-      <input type="checkbox" id="is_staff" name="is_staff" {% if user.is_staff %}checked{% endif %}>
+      {{ form.is_staff(id="is_admin") }}
     </div>
     <button id="submit">Submit</button>
   </form>

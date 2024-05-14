@@ -2,22 +2,22 @@
 {% block content %}
   <h2>Registration</h2>
   <form method="post" action="{{ url_for('register') }}">
-    {{ form.csrf_token }}
+    {{ form.hidden_tag() }}
     <div>
       <label for="username">Username</label>
-      <input id="username" name="username" required>
+      {{ form.username(id="username") }}
     </div>
     <div>
       <label for="email">E-mail</label>
-      <input id="email" name="email" required>
+      {{ form.email(id="email") }}
     </div>
     <div>
         <label for="password">Password</label>
-        <input type="password" id="password" name="password" required>
+        {{ form.password(id="password") }}
     </div>
     <div>
         <label for="password_confirm">Confirm password</label>
-        <input type="password" id="password_confirm" name="password_confirm" required>
+        {{ form.password_confirm(id="password_confirm") }}
     </div>
     <button type="submit">Submit</button>
   </form>

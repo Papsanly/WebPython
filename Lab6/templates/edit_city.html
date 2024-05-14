@@ -2,23 +2,23 @@
 {% block content %}
   <h2>Edit {{ city.id }}</h2>
   <form action="{{ url_for('edit_city', city_id=city.id) }}" method="post">
-    {{ form.csrf_token }}
+    {{ form.hidden_tag() }}
     <div>
       <label for="name">Name</label>
-      <input id="name" value="{{ city.name }}" name="name">
+      {{ form.name(id="name") }}
     </div>
     <div>
       <label for="country_id">Country Name</label>
       <select id="country_id" name="country_id" required>
         {% for country in countries %}
-          {% if country.id == city.country_id.id %}
-            <option selected value="{{ country.id }}">{{ country.name.capitalize }}</option>
+          {% if country.id == city.country_id %}
+            <option selected value="{{ country.id }}">{{ country.name.capitalize() }}</option>
           {% else %}
-            <option value="{{ country.id }}">{{ country.name.capitalize }}</option>
+            <option value="{{ country.id }}">{{ country.name.capitalize() }}</option>
           {% endif %}
         {% endfor %}
       </select>
     </div>
-    <button id="submit">Submit</button>
+    <button type="submit" id="submit">Submit</button>
   </form>
 {% endblock %}
