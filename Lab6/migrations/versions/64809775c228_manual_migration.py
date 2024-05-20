@@ -49,7 +49,6 @@ def upgrade():
                     sa.UniqueConstraint('username')
                     )
 
-    # Переносим данные из старой структуры в новую
     bind = op.get_bind()
     session = sa.orm.Session(bind=bind)
 
