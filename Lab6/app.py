@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_migrate import Migrate
+
 from models import db, User, Country, City, Forecast
 from forms import LoginForm, RegisterForm, CityForm, CountryForm, ForecastForm, CSRFProtectForm, EditUserForm
 from sqlalchemy.exc import IntegrityError
@@ -11,8 +13,10 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///lab6.db'  # Use your own database URI
 app.config['SECRET_KEY'] = 'qwertyquhjfbvsdgbh'
 
+db.init_app(app)
+migrate = Migrate(app, db)
+
 with app.app_context():
-    db.init_app(app)
     db.create_all()
     try:
         user = User(username='user', email='user@example.com')
@@ -103,8 +107,8 @@ def edit_forecast(forecast_id):
         db.session.commit()
         return redirect(url_for('get_forecast', city_name=city_name))
     cities = City.query.all()
-    return render_template('edit_forecast.html', 
-                           form=form, 
+    return render_template('edit_forecast.html',
+                           form=form,
                            forecast = forecast,
                            cities = cities)
 
@@ -115,10 +119,10 @@ def get_forecast(city_name):
     city = City.query.filter_by(name=city_name).first()
     if city is None:
         return "Error: City not found"
-    
+
     datetime_from = request.args.get('forecast_datetime_from')
     datetime_to = request.args.get('forecast_datetime_to')
-    
+
     if datetime_from and datetime_to:
         forecasts = Forecast.query.filter(Forecast.city_id == city.id,
                                           Forecast.datetime.between(datetime_from, datetime_to)).all()
@@ -129,10 +133,10 @@ def get_forecast(city_name):
     else:
         forecasts = Forecast.query.filter_by(city_id=city.id).all()
     form = ForecastForm()
-    return render_template('forecasts.html', 
-                           forecasts=forecasts, 
-                           city_name=city_name, 
-                           forecast_datetime_from=datetime_from, 
+    return render_template('forecasts.html',
+                           forecasts=forecasts,
+                           city_name=city_name,
+                           forecast_datetime_from=datetime_from,
                            forecast_datetime_to=datetime_to,
                            form = form)
 
@@ -238,8 +242,8 @@ def edit_user(user_id):
         form.populate_obj(user)
         db.session.commit()
         return redirect(url_for('users_view'))
-    return render_template('edit_user.html', 
-                           form=form, 
+    return render_template('edit_user.html',
+                           form=form,
                            user = user)
 
 
@@ -267,13 +271,13 @@ def edit_country(country_id):
     country = Country.query.get(country_id)
     if (country is None):
         return redirect(url_for('error_view', code=404, detail='Country not found'))
-    
+
     form = CountryForm(obj=country)
     if form.validate_on_submit():
         form.populate_obj(country)
         db.session.commit()
         return redirect(url_for('countries'))
-    
+
     return render_template('edit_country.html', form=form, country = country)
 
 
@@ -301,17 +305,17 @@ def edit_city(city_id):
     city = City.query.get(city_id)
     if city is None:
         return redirect(url_for('error_view', code=404, detail='City not found'))
-    
+
     form = CityForm(obj=city)
     if form.validate_on_submit():
         form.populate_obj(city)
         db.session.commit()
         return redirect(url_for('cities'))
-    
+
     countries = Country.query.all()
-    return render_template('edit_city.html', 
-                           form=form, 
-                           city = city, 
+    return render_template('edit_city.html',
+                           form=form,
+                           city = city,
                            countries = countries)
 
 if __name__ == '__main__':
