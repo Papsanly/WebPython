@@ -68,7 +68,7 @@ def add_city():
         country = Country.query.get(form.country_id.data)
         if country is None:
             raise BadRequest('Invalid country ID')
-        city = City(name=form.city_name.data, country_id=country.id)
+        city = City(name=form.name.data, country_id=country.id)
         db.session.add(city)
         try:
             db.session.commit()

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Registration</h2>
+  <form method="post" action="{{ url_for('main.register') }}">
+    {{ form.hidden_tag() }}
+    <div>
+      <label for="username">Username</label>
+      {{ form.username(id="username") }}
+    </div>
+    <div>
+      <label for="email">E-mail</label>
+      {{ form.email(id="email") }}
+    </div>
+    <div>
+        <label for="password">Password</label>
+        {{ form.password(id="password") }}
+    </div>
+    <div>
+        <label for="password_confirm">Confirm password</label>
+        {{ form.password_confirm(id="password_confirm") }}
+    </div>
+    <button type="submit">Submit</button>
+  </form>
+{% endblock %}

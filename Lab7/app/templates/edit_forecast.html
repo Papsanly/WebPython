@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Edit forecast</h2>
+  <form action="{{ url_for('main.edit_forecast', forecast_id=forecast.id) }}" method="post">
+    {{ form.hidden_tag() }}
+    <div>
+      <label for="city_id">City Name</label>
+      <select id="city_id" name="city_id" required>
+        {% for city in cities %}
+          {% if city.id == forecast.city_id %}
+            <option selected value="{{ city.id }}">{{ city.name.capitalize() }}</option>
+          {% else %}
+            <option value="{{ city.id }}">{{ city.name.capitalize() }}</option>
+          {% endif %}
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="forecast_datetime">Datetime</label>
+      <input type="date" id="forecast_datetime" name="forecast_datetime" value="{{ forecast.datetime.strftime('%Y-%m-%d') }}">
+    </div>
+    <div>
+      <label for="forecasted_temperature">Forecasted Temperature</label>
+      {{ form.forecasted_temperature(id="forecasted_temperature") }}
+    </div>
+    <div>
+      <label for="forecasted_humidity">Forecasted Humidity</label>
+      {{ form.forecasted_humidity(id="forecasted_humidity") }}
+    </div>
+    <button type="submit">Submit</button>
+  </form>
+{% endblock %}

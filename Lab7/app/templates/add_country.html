@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Add country</h2>
+  <form method="post" action="/add-country">
+    {{ form.hidden_tag() }}
+    <div>
+      <label for="country_name">Country name</label>
+      {{ form.name(id="name") }}
+    </div>
+    <div>
+      <label for="country_code">Country code</label>
+      {{ form.code(id="code") }}
+    </div>
+    <button type="submit">Submit</button>
+  </form>
+{% endblock %}
